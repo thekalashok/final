@@ -867,13 +867,6 @@ export default function ShopHome() {
             <a href="#" className="hover:text-[#3a322b] transition-colors">Shop</a>
             <a href="#" className="hover:text-[#3a322b] transition-colors">About Us</a>
             <a href="#" className="hover:text-[#3a322b] transition-colors">Contact</a>
-            <button 
-              onClick={() => navigate("/admin/login")}
-              className="hover:text-[#3a322b] transition-colors flex items-center gap-2"
-            >
-              <Lock className="w-3 h-3" />
-              Admin Panel
-            </button>
           </div>
           
           <div className="text-xs text-[#8c7e6d] text-center md:text-right">
