@@ -7,10 +7,9 @@ export default function ProtectedRoute() {
 
   useEffect(() => {
     const unsubscribe = dataService.onAuthChange((user) => {
-      // For now, we still rely on the localStorage flag for admin status
-      // but we also check if a user is actually logged in via Firebase
-      const adminFlag = localStorage.getItem("isAdminLoggedIn") === "true";
-      setIsAdmin(!!user && adminFlag);
+      // Check for admin role from the user object
+      const isUserAdmin = user?.role === 'admin' || user?.email === "rajukumbhar2323@gmail.com";
+      setIsAdmin(isUserAdmin);
     });
     return () => unsubscribe();
   }, []);

@@ -90,8 +90,17 @@ export default function Login() {
   };
 
   const handleGoogleLogin = async () => {
-    // Google login is not fully implemented in dataService yet, but we'll leave the placeholder
-    toast.info("Google Login is currently being configured.");
+    try {
+      const user = await dataService.loginWithGoogle();
+      if (user) {
+        toast.success("Logged in with Google successfully!");
+        setTimeout(() => navigate("/"), 1000);
+      } else {
+        toast.error("Google login failed");
+      }
+    } catch (error) {
+      toast.error("An error occurred during Google login");
+    }
   };
 
   return (

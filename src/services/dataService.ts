@@ -18,10 +18,14 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
   User as FirebaseUser
 } from "firebase/auth";
 import { db, auth } from "../firebase";
 import { Product, Customer, Order, User } from "../types";
+
+const googleProvider = new GoogleAuthProvider();
 
 enum OperationType {
   CREATE = 'create',
@@ -125,16 +129,56 @@ export const dataService = {
           ...data,
           addresses: data.addresses || []
         } as User;
+      } else {
+        // If user document doesn't exist (e.g. legacy user), create it
+        const isAdmin = firebaseUser.email === "rajukumbhar2323@gmail.com" || firebaseUser.email === "admin@kalaa.com";
+        const newUser: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || "",
+          email: firebaseUser.email || "",
+          addresses: [],
+          role: isAdmin ? 'admin' : 'user',
+          created_date: new Date().toISOString(),
+        };
+        await setDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), newUser);
+        return newUser;
       }
-      return {
-        id: firebaseUser.uid,
-        name: firebaseUser.displayName || "",
-        email: firebaseUser.email || "",
-        addresses: [],
-        created_date: new Date().toISOString(),
-      };
     } catch (error) {
       console.error("Login error:", error);
+      return null;
+    }
+  },
+
+  loginWithGoogle: async (): Promise<User | null> => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+      
+      const userDocRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        return {
+          ...data,
+          addresses: data.addresses || []
+        } as User;
+      } else {
+        // Create new user document if it doesn't exist
+        const isAdmin = firebaseUser.email === "rajukumbhar2323@gmail.com" || firebaseUser.email === "admin@kalaa.com";
+        const newUser: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || "",
+          email: firebaseUser.email || "",
+          addresses: [],
+          role: isAdmin ? 'admin' : 'user',
+          created_date: new Date().toISOString(),
+        };
+        await setDoc(userDocRef, newUser);
+        return newUser;
+      }
+    } catch (error) {
+      console.error("Google login error:", error);
       return null;
     }
   },
@@ -144,6 +188,7 @@ export const dataService = {
       const userCredential = await createUserWithEmailAndPassword(auth, userData.email || "", userData.password || "");
       const firebaseUser = userCredential.user;
       
+      const isAdmin = userData.email === "rajukumbhar2323@gmail.com" || userData.email === "admin@kalaa.com";
       const newUser: User = {
         id: firebaseUser.uid,
         name: userData.name || "",
@@ -151,6 +196,7 @@ export const dataService = {
         age: userData.age,
         mobile: userData.mobile,
         addresses: userData.addresses || [],
+        role: isAdmin ? 'admin' : 'user',
         created_date: new Date().toISOString(),
       };
       
@@ -177,11 +223,13 @@ export const dataService = {
             addresses: data.addresses || []
           } as User);
         } else {
+          const isAdmin = firebaseUser.email === "rajukumbhar2323@gmail.com" || firebaseUser.email === "admin@kalaa.com";
           callback({
             id: firebaseUser.uid,
-            name: firebaseUser.displayName || "",
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || "",
             email: firebaseUser.email || "",
             addresses: [],
+            role: isAdmin ? 'admin' : 'user',
             created_date: new Date().toISOString(),
           });
         }

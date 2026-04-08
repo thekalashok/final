@@ -11,6 +11,7 @@ export interface User {
   age?: number;
   mobile?: string;
   addresses: string[];
+  role?: 'admin' | 'user';
   created_date: string;
 }
 
