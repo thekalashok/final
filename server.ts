@@ -39,6 +39,32 @@ const PORT = 3000;
 // In-memory OTP store (For production, use Redis or Firestore with TTL)
 const otpStore = new Map<string, { code: string, expiresAt: number }>();
 
+app.post("/api/auth/check-user", async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+    if (!phoneNumber) return res.status(400).json({ error: "Phone number required" });
+
+    if (!getApps().length) {
+       return res.status(500).json({ error: "Firebase Admin not configured." });
+    }
+
+    const uid = phoneNumber.replace(/\D/g, '');
+    try {
+      await getAuth().getUser(uid);
+      res.json({ exists: true });
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        res.json({ exists: false });
+      } else {
+        throw error;
+      }
+    }
+  } catch (error: any) {
+    console.error("Check user error:", error);
+    res.status(500).json({ error: error.message || "Failed to check user" });
+  }
+});
+
 app.post("/api/auth/send-otp", async (req, res) => {
   try {
     const { phoneNumber, channel } = req.body;

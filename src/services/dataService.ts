@@ -185,6 +185,21 @@ export const dataService = {
     }
   },
 
+  checkUserExists: async (phoneNumber: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/check-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber })
+      });
+      const data = await response.json();
+      return data.exists === true;
+    } catch (error) {
+      console.error("Error checking user:", error);
+      return false;
+    }
+  },
+
   sendOTP: async (phoneNumber: string, channel: 'sms' | 'whatsapp' = 'sms'): Promise<boolean> => {
     try {
       const response = await fetch('/api/auth/send-otp', {
@@ -203,7 +218,7 @@ export const dataService = {
     }
   },
 
-  verifyOTP: async (phoneNumber: string, otp: string): Promise<User> => {
+  verifyOTP: async (phoneNumber: string, otp: string, profileData?: { name: string, email: string, gender: string }): Promise<User> => {
     try {
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
@@ -233,9 +248,10 @@ export const dataService = {
         // Create new user document if it doesn't exist
         const newUser: User = {
           id: firebaseUser.uid,
-          name: phoneNumber,
-          email: "",
+          name: profileData?.name || phoneNumber,
+          email: profileData?.email || "",
           mobile: phoneNumber,
+          gender: profileData?.gender,
           addresses: [],
           role: 'user',
           created_date: new Date().toISOString(),

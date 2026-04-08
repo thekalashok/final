@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingBag, Search, Filter, ShoppingCart, Plus, Minus, X, CreditCard, User, MapPin, Phone, Package, LogOut, History, Settings, Lock, ArrowRight } from "lucide-react";
+import { ShoppingBag, Search, Filter, ShoppingCart, Plus, Minus, X, CreditCard, User, MapPin, Phone, Package, LogOut, History, Settings, Lock, ArrowRight, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { dataService } from "../../services/dataService";
 import { Product, LineItem, Order } from "../../types";
@@ -257,41 +257,76 @@ export default function ShopHome() {
                       </SheetTitle>
                     </SheetHeader>
                     
-                    <ScrollArea className="flex-grow">
+                    <div className="flex-1 overflow-y-auto min-h-0">
                       {accountView === "menu" && (
-                        <>
-                          <div className="flex flex-col items-center py-10 border-b border-[#ece4d5]">
-                            <div className="w-20 h-20 bg-[#3a322b] rounded-full flex items-center justify-center mb-4 shadow-lg">
-                              <User className="text-white w-10 h-10" />
+                        <div className="h-full flex flex-col pt-4">
+                          <div className="flex items-center gap-4 px-6 mb-6">
+                            <div className="w-20 h-20 bg-[#1a1a1a] rounded-full flex items-center justify-center text-white text-3xl font-bold">
+                              {user?.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
                             </div>
-                            <h3 className="font-bold text-xl text-[#4a3f35]">{user.name}</h3>
-                            <p className="text-[#8c7e6d] text-sm">{user.email}</p>
+                            <div className="flex-1">
+                              <div className="flex justify-between items-start">
+                                <h3 className="font-bold text-lg text-[#3a322b]">{user?.name || 'User'}</h3>
+                                <button className="text-[#008296] text-sm font-medium">Edit</button>
+                              </div>
+                              <p className="text-sm text-[#8c7e6d]">{user?.email}</p>
+                              <p className="text-sm text-[#8c7e6d]">{user?.mobile}</p>
+                            </div>
                           </div>
 
-                          <div className="py-6 space-y-2">
-                            <button 
-                              onClick={() => setAccountView("history")}
-                              className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-[#f7f3eb] text-[#4a3f35] transition-all"
-                            >
-                              <History className="w-5 h-5 text-[#b0966a]" />
-                              <span className="font-medium">Order History</span>
-                            </button>
-                            <button 
-                              onClick={() => setAccountView("addresses")}
-                              className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-[#f7f3eb] text-[#4a3f35] transition-all"
-                            >
-                              <MapPin className="w-5 h-5 text-[#b0966a]" />
-                              <span className="font-medium">Saved Addresses</span>
-                            </button>
-                            <button 
-                              onClick={() => setAccountView("settings")}
-                              className="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-[#f7f3eb] text-[#4a3f35] transition-all"
-                            >
-                              <Settings className="w-5 h-5 text-[#b0966a]" />
-                              <span className="font-medium">Account Settings</span>
-                            </button>
+                          <div className="flex-1">
+                            <div className="bg-white border-y border-[#ece4d5]">
+                              <button 
+                                onClick={() => setAccountView("history")}
+                                className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors"
+                              >
+                                <span className="text-[#3a322b]">Orders</span>
+                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
+                              </button>
+                              <button className="w-full flex items-center justify-between p-4 hover:bg-[#fdfbf7] transition-colors">
+                                <span className="text-[#3a322b]">Customer Care</span>
+                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
+                              </button>
+                            </div>
+
+                            <div className="bg-white border-b border-[#ece4d5] mt-2">
+                              <button className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors">
+                                <span className="text-[#3a322b]">Saved Cards</span>
+                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
+                              </button>
+                              <button 
+                                onClick={() => setAccountView("addresses")}
+                                className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors"
+                              >
+                                <span className="text-[#3a322b]">Address</span>
+                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
+                              </button>
+                              <button className="w-full flex items-center justify-between p-4 hover:bg-[#fdfbf7] transition-colors">
+                                <span className="text-[#3a322b]">Notifications</span>
+                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
+                              </button>
+                            </div>
+
+                            <div className="bg-white border-b border-[#ece4d5] mt-2">
+                              <button className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors">
+                                <span className="text-[#3a322b]">How To Return</span>
+                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
+                              </button>
+                              <button className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors">
+                                <span className="text-[#3a322b]">Terms & Conditions</span>
+                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
+                              </button>
+                              <button className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors">
+                                <span className="text-[#3a322b]">Promotions Terms & Conditions</span>
+                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
+                              </button>
+                              <button className="w-full flex items-center justify-between p-4 hover:bg-[#fdfbf7] transition-colors">
+                                <span className="text-[#3a322b]">Returns & Refunds Policy</span>
+                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
+                              </button>
+                            </div>
                           </div>
-                        </>
+                        </div>
                       )}
 
                       {accountView === "history" && (
@@ -410,9 +445,9 @@ export default function ShopHome() {
                           </Button>
                         </form>
                       )}
-                    </ScrollArea>
+                    </div>
 
-                    <div className="pt-6 border-t border-[#ece4d5]">
+                    <div className="p-6 pt-4 border-t border-[#ece4d5] mt-auto bg-white">
                       <Button 
                         variant="outline"
                         className="w-full h-14 rounded-2xl border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 flex items-center justify-center gap-2"

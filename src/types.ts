@@ -10,6 +10,7 @@ export interface User {
   password?: string;
   age?: number;
   mobile?: string;
+  gender?: string;
   addresses: string[];
   role?: 'admin' | 'user';
   created_date: string;
