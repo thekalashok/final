@@ -83,14 +83,6 @@ export default function ShopHome() {
       }
     });
 
-    const unsubscribeOrders = dataService.subscribe("ORDERS", async () => {
-      const curr = dataService.getCurrentUser();
-      if (curr) {
-        const orders = await dataService.getUserOrders(curr.email);
-        setUserOrders(orders);
-      }
-    });
-
     const unsubscribeProducts = dataService.subscribe("PRODUCTS", (newProducts) => {
       setProducts(newProducts.filter((p: any) => p.status === "active"));
     });
@@ -104,7 +96,6 @@ export default function ShopHome() {
 
     return () => {
       unsubscribeAuth();
-      unsubscribeOrders();
       unsubscribeProducts();
       unsubscribeCategories();
     };
@@ -243,11 +234,11 @@ export default function ShopHome() {
             <div className="flex items-center justify-end gap-2 md:gap-3">
               {user ? (
                 <Sheet onOpenChange={(open) => !open && setAccountView("menu")}>
-                  <SheetTrigger asChild>
+                  <SheetTrigger render={
                     <button className="w-10 h-10 bg-[#f7f3eb] text-[#3a322b] rounded-full flex items-center justify-center hover:bg-[#ece4d5] transition-all shadow-sm">
                       <User className="w-5 h-5" />
                     </button>
-                  </SheetTrigger>
+                  } />
                   <SheetContent className="w-full sm:max-w-md flex flex-col bg-[#fdfbf7]">
                     <SheetHeader>
                       <SheetTitle className="font-serif text-2xl flex items-center gap-2">
@@ -440,7 +431,7 @@ export default function ShopHome() {
               )}
 
               <Sheet>
-                <SheetTrigger asChild>
+                <SheetTrigger render={
                   <button className="flex items-center gap-2 bg-[#3a322b] text-white px-5 py-2.5 rounded-full hover:bg-[#4a3f35] transition-all shadow-md">
                     <ShoppingBag className="w-4 h-4" />
                     <span className="text-sm font-medium">Bag</span>
@@ -450,7 +441,7 @@ export default function ShopHome() {
                       </span>
                     )}
                   </button>
-                </SheetTrigger>
+                } />
               <SheetContent className="w-full sm:max-w-md flex flex-col bg-[#fdfbf7]">
                 <SheetHeader>
                   <SheetTitle className="font-serif text-2xl flex items-center gap-2">

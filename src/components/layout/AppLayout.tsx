@@ -19,11 +19,11 @@ export default function AppLayout() {
       {/* Mobile Sidebar */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetTrigger asChild>
+          <SheetTrigger render={
             <Button variant="outline" size="icon" className="rounded-xl bg-white shadow-md border-slate-200">
               <Menu className="w-5 h-5 text-slate-600" />
             </Button>
-          </SheetTrigger>
+          } />
           <SheetContent side="left" className="p-0 w-64 border-none">
             <Sidebar onNavigate={() => setIsMobileMenuOpen(false)} />
           </SheetContent>
