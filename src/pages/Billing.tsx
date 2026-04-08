@@ -116,12 +116,12 @@ export default function Billing() {
   };
 
   return (
-    <div className="h-[calc(100vh-120px)] flex gap-8 overflow-hidden">
+    <div className="h-auto lg:h-[calc(100vh-120px)] flex flex-col lg:flex-row gap-8 overflow-y-auto lg:overflow-hidden">
       {/* Product Selection */}
       <div className="flex-grow flex flex-col gap-6 overflow-hidden">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold font-display">Point of Sale</h1>
-          <div className="relative w-96">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold font-display">Point of Sale</h1>
+          <div className="relative w-full sm:w-72 md:w-96">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
               placeholder="Search products..."
@@ -132,15 +132,15 @@ export default function Billing() {
           </div>
         </div>
 
-        <ScrollArea className="flex-grow pr-4">
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <ScrollArea className="flex-grow pr-0 lg:pr-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
             {filteredProducts.map((product) => (
               <button
                 key={product.id}
                 onClick={() => addToCart(product)}
-                className="group text-left bg-white p-4 rounded-3xl border border-slate-100 hover:border-brand-500 hover:shadow-lg transition-all"
+                className="group text-left bg-white p-3 md:p-4 rounded-2xl md:rounded-3xl border border-slate-100 hover:border-brand-500 hover:shadow-lg transition-all"
               >
-                <div className="aspect-square rounded-2xl overflow-hidden mb-4 relative">
+                <div className="aspect-square rounded-xl md:rounded-2xl overflow-hidden mb-3 md:mb-4 relative">
                   <img 
                     src={product.image_url} 
                     alt={product.name} 
@@ -149,10 +149,10 @@ export default function Billing() {
                   />
                   <div className="absolute inset-0 bg-brand-500/0 group-hover:bg-brand-500/10 transition-colors" />
                 </div>
-                <h4 className="font-bold text-sm line-clamp-1">{product.name}</h4>
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-brand-500 font-bold">₹{product.price}</span>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-widest">Stock: {product.stock}</span>
+                <h4 className="font-bold text-xs md:text-sm line-clamp-1">{product.name}</h4>
+                <div className="flex items-center justify-between mt-1 md:mt-2">
+                  <span className="text-brand-500 font-bold text-xs md:text-sm">₹{product.price}</span>
+                  <span className="text-[9px] md:text-[10px] text-slate-400 uppercase tracking-widest">Stock: {product.stock}</span>
                 </div>
               </button>
             ))}
@@ -161,22 +161,22 @@ export default function Billing() {
       </div>
 
       {/* Cart & Checkout */}
-      <div className="w-[450px] flex flex-col gap-6 h-full">
-        <Card className="flex-grow flex flex-col overflow-hidden border-none shadow-2xl rounded-[2.5rem] bg-white">
-          <CardHeader className="p-8 pb-4">
+      <div className="w-full lg:w-[400px] xl:w-[450px] flex flex-col gap-6 h-full pb-8 lg:pb-0">
+        <Card className="flex-grow flex flex-col overflow-hidden border-none shadow-2xl rounded-[2rem] md:rounded-[2.5rem] bg-white">
+          <CardHeader className="p-6 md:p-8 pb-4">
             <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <ShoppingCart className="w-6 h-6 text-brand-500" />
+              <span className="flex items-center gap-2 text-lg md:text-xl">
+                <ShoppingCart className="w-5 h-5 md:w-6 md:h-6 text-brand-500" />
                 Current Cart
               </span>
-              <Badge className="bg-slate-100 text-slate-900 border-none rounded-full px-3 py-1">
+              <Badge className="bg-slate-100 text-slate-900 border-none rounded-full px-2 md:px-3 py-1 text-xs">
                 {cart.reduce((acc, item) => acc + item.quantity, 0)} items
               </Badge>
             </CardTitle>
           </CardHeader>
           
-          <CardContent className="flex-grow flex flex-col p-8 pt-4 overflow-hidden">
-            <ScrollArea className="flex-grow -mx-2 px-2">
+          <CardContent className="flex-grow flex flex-col p-6 md:p-8 pt-4 overflow-hidden">
+            <ScrollArea className="flex-grow -mx-2 px-2 max-h-[300px] lg:max-h-none">
               {cart.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64 text-slate-300">
                   <ShoppingCart className="w-16 h-16 mb-4 opacity-20" />

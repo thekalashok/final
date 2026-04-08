@@ -59,11 +59,11 @@ export default function Customers() {
     <div className="space-y-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-bold font-display mb-2">Customer Base</h1>
-          <p className="text-slate-500">View and manage your customer relationships and history.</p>
+          <h1 className="text-3xl md:text-4xl font-bold font-display mb-2">Customer Base</h1>
+          <p className="text-slate-500 text-sm md:text-base">View and manage your customer relationships and history.</p>
         </div>
         <Button 
-          className="bg-brand-500 hover:bg-brand-600 text-white rounded-2xl px-8 h-12 font-bold shadow-lg shadow-brand-500/20"
+          className="w-full md:w-auto bg-brand-500 hover:bg-brand-600 text-white rounded-2xl px-8 h-12 font-bold shadow-lg shadow-brand-500/20"
         >
           <UserPlus className="w-5 h-5 mr-2" />
           Add Customer
@@ -81,81 +81,83 @@ export default function Customers() {
       </div>
 
       <div className="rounded-3xl border border-slate-100 bg-white overflow-hidden shadow-lg">
-        <Table>
-          <TableHeader className="bg-slate-50/50">
-            <TableRow className="border-none">
-              <TableHead className="font-bold text-slate-900">Customer</TableHead>
-              <TableHead className="font-bold text-slate-900">Contact</TableHead>
-              <TableHead className="font-bold text-slate-900">Total Orders</TableHead>
-              <TableHead className="font-bold text-slate-900">Total Spend</TableHead>
-              <TableHead className="font-bold text-slate-900">Last Order</TableHead>
-              <TableHead className="font-bold text-slate-900 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredCustomers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-slate-400">
-                  No customers found
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-slate-50/50">
+              <TableRow className="border-none">
+                <TableHead className="font-bold text-slate-900 whitespace-nowrap">Customer</TableHead>
+                <TableHead className="font-bold text-slate-900 whitespace-nowrap">Contact</TableHead>
+                <TableHead className="font-bold text-slate-900 whitespace-nowrap">Total Orders</TableHead>
+                <TableHead className="font-bold text-slate-900 whitespace-nowrap">Total Spend</TableHead>
+                <TableHead className="font-bold text-slate-900 whitespace-nowrap">Last Order</TableHead>
+                <TableHead className="font-bold text-slate-900 text-right whitespace-nowrap">Actions</TableHead>
               </TableRow>
-            ) : (
-              filteredCustomers.map((customer) => {
-                const customerOrders = getCustomerOrders(customer.name);
-                const lastOrder = customerOrders[0];
-                
-                return (
-                  <TableRow key={customer.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-brand-500/10 rounded-xl flex items-center justify-center text-brand-500 font-bold">
-                          {customer.name.substring(0, 1)}
-                        </div>
-                        <span className="font-bold">{customer.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                          <Phone className="w-3 h-3" /> {customer.phone}
-                        </div>
-                        {customer.email && (
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
-                            <Mail className="w-3 h-3" /> {customer.email}
+            </TableHeader>
+            <TableBody>
+              {filteredCustomers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-32 text-center text-slate-400">
+                    No customers found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredCustomers.map((customer) => {
+                  const customerOrders = getCustomerOrders(customer.name);
+                  const lastOrder = customerOrders[0];
+                  
+                  return (
+                    <TableRow key={customer.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
+                      <TableCell className="whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-brand-500/10 rounded-xl flex items-center justify-center text-brand-500 font-bold">
+                            {customer.name.substring(0, 1)}
                           </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="rounded-full bg-slate-50 border-none font-bold">
-                        {customerOrders.length} orders
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-bold text-brand-500">
-                      ₹{getCustomerTotalSpend(customer.name)}
-                    </TableCell>
-                    <TableCell className="text-slate-500 text-sm">
-                      {lastOrder ? format(new Date(lastOrder.created_date), "MMM d, yyyy") : "N/A"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="rounded-full w-10 h-10 p-0 hover:bg-brand-500/10 hover:text-brand-500"
-                        onClick={() => {
-                          setSelectedCustomer(customer);
-                          setIsDrawerOpen(true);
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                          <span className="font-bold">{customer.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <Phone className="w-3 h-3" /> {customer.phone}
+                          </div>
+                          {customer.email && (
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              <Mail className="w-3 h-3" /> {customer.email}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <Badge variant="outline" className="rounded-full bg-slate-50 border-none font-bold">
+                          {customerOrders.length} orders
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-bold text-brand-500 whitespace-nowrap">
+                        ₹{getCustomerTotalSpend(customer.name)}
+                      </TableCell>
+                      <TableCell className="text-slate-500 text-sm whitespace-nowrap">
+                        {lastOrder ? format(new Date(lastOrder.created_date), "MMM d, yyyy") : "N/A"}
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="rounded-full w-10 h-10 p-0 hover:bg-brand-500/10 hover:text-brand-500"
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            setIsDrawerOpen(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <CustomerDetailDrawer

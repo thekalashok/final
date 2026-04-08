@@ -224,23 +224,23 @@ export default function ShopHome() {
       <Toaster position="top-right" />
       
       {/* Header */}
-      <header className="w-full bg-[#fdfbf7] pt-8 pb-4">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center gap-8">
-          <div className="w-full grid grid-cols-3 items-center">
-            <div className="flex items-center">
+      <header className="w-full bg-[#fdfbf7] pt-4 md:pt-8 pb-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col items-center gap-6 md:gap-8">
+          <div className="w-full flex items-center justify-between md:grid md:grid-cols-3">
+            <div className="hidden md:flex items-center">
               {/* Left side empty for balance or could add search here */}
             </div>
 
             <div className="flex flex-col items-center text-center">
-              <h1 className="font-serif text-6xl md:text-7xl font-bold tracking-[0.6em] text-[#4a3f35] uppercase mr-[-0.6em]">
+              <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-bold tracking-[0.3em] md:tracking-[0.6em] text-[#4a3f35] uppercase md:mr-[-0.6em]">
                 KALAA
               </h1>
-              <p className="text-[11px] tracking-[0.5em] text-[#8c7e6d] uppercase mt-4 font-medium mr-[-0.5em]">
+              <p className="text-[9px] md:text-[11px] tracking-[0.3em] md:tracking-[0.5em] text-[#8c7e6d] uppercase mt-2 md:mt-4 font-medium md:mr-[-0.5em]">
                 Handcrafted with Love
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end gap-2 md:gap-3">
               {user ? (
                 <Sheet onOpenChange={(open) => !open && setAccountView("menu")}>
                   <SheetTrigger asChild>
@@ -545,24 +545,24 @@ export default function ShopHome() {
           </div>
 
           {/* Collection Title Section */}
-          <div className="w-full flex flex-col items-center mt-12 mb-4">
-            <p className="text-[10px] tracking-[0.4em] text-[#8c7e6d] uppercase font-medium mb-2">
+          <div className="w-full flex flex-col items-center mt-8 md:mt-12 mb-4">
+            <p className="text-[9px] md:text-[10px] tracking-[0.3em] md:tracking-[0.4em] text-[#8c7e6d] uppercase font-medium mb-2">
               EST. WITH LOVE
             </p>
-            <h2 className="font-serif text-5xl font-bold text-[#4a3f35] mb-6">
+            <h2 className="font-serif text-3xl md:text-5xl font-bold text-[#4a3f35] mb-4 md:mb-6">
               Our Collection
             </h2>
-            <div className="w-full flex items-center justify-center gap-4">
-              <div className="h-[1px] bg-[#ece4d5] flex-grow max-w-[120px]" />
-              <div className="w-2 h-2 bg-[#b0966a] rotate-45" />
-              <div className="h-[1px] bg-[#ece4d5] flex-grow max-w-[120px]" />
+            <div className="w-full flex items-center justify-center gap-3 md:gap-4">
+              <div className="h-[1px] bg-[#ece4d5] flex-grow max-w-[80px] md:max-w-[120px]" />
+              <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#b0966a] rotate-45" />
+              <div className="h-[1px] bg-[#ece4d5] flex-grow max-w-[80px] md:max-w-[120px]" />
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-12">
+      <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
         {filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-[#c8b594]">
             <Search className="w-16 h-16 mb-4 opacity-10" />

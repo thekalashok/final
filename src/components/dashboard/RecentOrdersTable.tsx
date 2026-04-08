@@ -18,44 +18,46 @@ const statusColors: Record<string, string> = {
 export default function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
   return (
     <div className="rounded-3xl border border-slate-100 bg-white overflow-hidden shadow-lg">
-      <Table>
-        <TableHeader className="bg-slate-50/50">
-          <TableRow className="border-none">
-            <TableHead className="font-bold text-slate-900">Order ID</TableHead>
-            <TableHead className="font-bold text-slate-900">Customer</TableHead>
-            <TableHead className="font-bold text-slate-900">Date</TableHead>
-            <TableHead className="font-bold text-slate-900">Amount</TableHead>
-            <TableHead className="font-bold text-slate-900 text-right">Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={5} className="h-32 text-center text-slate-400">
-                No orders found
-              </TableCell>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader className="bg-slate-50/50">
+            <TableRow className="border-none">
+              <TableHead className="font-bold text-slate-900 whitespace-nowrap">Order ID</TableHead>
+              <TableHead className="font-bold text-slate-900 whitespace-nowrap">Customer</TableHead>
+              <TableHead className="font-bold text-slate-900 whitespace-nowrap">Date</TableHead>
+              <TableHead className="font-bold text-slate-900 whitespace-nowrap">Amount</TableHead>
+              <TableHead className="font-bold text-slate-900 text-right whitespace-nowrap">Status</TableHead>
             </TableRow>
-          ) : (
-            orders.map((order) => (
-              <TableRow key={order.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
-                <TableCell className="font-mono text-xs font-bold text-slate-500">
-                  {order.order_number}
-                </TableCell>
-                <TableCell className="font-medium">{order.customer_name}</TableCell>
-                <TableCell className="text-slate-500 text-sm">
-                  {format(new Date(order.created_date), "MMM d, yyyy")}
-                </TableCell>
-                <TableCell className="font-bold">₹{order.total}</TableCell>
-                <TableCell className="text-right">
-                  <Badge variant="outline" className={`capitalize rounded-full px-3 py-0.5 border-none ${statusColors[order.status]}`}>
-                    {order.status}
-                  </Badge>
+          </TableHeader>
+          <TableBody>
+            {orders.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-32 text-center text-slate-400">
+                  No orders found
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              orders.map((order) => (
+                <TableRow key={order.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
+                  <TableCell className="font-mono text-xs font-bold text-slate-500 whitespace-nowrap">
+                    {order.order_number}
+                  </TableCell>
+                  <TableCell className="font-medium whitespace-nowrap">{order.customer_name}</TableCell>
+                  <TableCell className="text-slate-500 text-sm whitespace-nowrap">
+                    {format(new Date(order.created_date), "MMM d, yyyy")}
+                  </TableCell>
+                  <TableCell className="font-bold whitespace-nowrap">₹{order.total}</TableCell>
+                  <TableCell className="text-right whitespace-nowrap">
+                    <Badge variant="outline" className={`capitalize rounded-full px-3 py-0.5 border-none ${statusColors[order.status]}`}>
+                      {order.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

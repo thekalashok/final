@@ -12,17 +12,18 @@ const navItems = [
   { icon: Users, label: "Customers", path: "/admin/customers" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await dataService.logout();
     localStorage.removeItem("isAdminLoggedIn");
     navigate("/admin/login");
+    if (onNavigate) onNavigate();
   };
 
   return (
-    <div className="w-60 h-full bg-slate-900 text-white flex flex-col">
+    <div className="w-full lg:w-60 h-full bg-slate-900 text-white flex flex-col">
       <div className="p-6 flex items-center gap-3">
         <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center">
           <Scissors className="text-white w-6 h-6" />
@@ -36,6 +37,7 @@ export default function Sidebar() {
             key={item.path}
             to={item.path}
             end={item.path === "/admin"}
+            onClick={onNavigate}
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
@@ -55,7 +57,10 @@ export default function Sidebar() {
         <Button
           variant="ghost"
           className="w-full justify-start text-slate-400 hover:text-white hover:bg-white/5"
-          onClick={() => navigate("/")}
+          onClick={() => {
+            navigate("/");
+            if (onNavigate) onNavigate();
+          }}
         >
           <ExternalLink className="w-5 h-5 mr-3" />
           View Shop

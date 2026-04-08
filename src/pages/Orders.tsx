@@ -60,8 +60,8 @@ export default function Orders() {
     <div className="space-y-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-bold font-display mb-2">Order Management</h1>
-          <p className="text-slate-500">Track and manage all your customer transactions.</p>
+          <h1 className="text-3xl md:text-4xl font-bold font-display mb-2">Order Management</h1>
+          <p className="text-slate-500 text-sm md:text-base">Track and manage all your customer transactions.</p>
         </div>
       </div>
 
@@ -76,7 +76,7 @@ export default function Orders() {
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48 h-12 rounded-2xl border-slate-100 bg-white">
+          <SelectTrigger className="w-full sm:w-48 h-12 rounded-2xl border-slate-100 bg-white">
             <Filter className="w-4 h-4 mr-2" />
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
@@ -90,59 +90,61 @@ export default function Orders() {
       </div>
 
       <div className="rounded-3xl border border-slate-100 bg-white overflow-hidden shadow-lg">
-        <Table>
-          <TableHeader className="bg-slate-50/50">
-            <TableRow className="border-none">
-              <TableHead className="font-bold text-slate-900">Order ID</TableHead>
-              <TableHead className="font-bold text-slate-900">Customer</TableHead>
-              <TableHead className="font-bold text-slate-900">Date</TableHead>
-              <TableHead className="font-bold text-slate-900">Items</TableHead>
-              <TableHead className="font-bold text-slate-900">Total</TableHead>
-              <TableHead className="font-bold text-slate-900">Status</TableHead>
-              <TableHead className="font-bold text-slate-900 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredOrders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="h-32 text-center text-slate-400">
-                  No orders found
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-slate-50/50">
+              <TableRow className="border-none">
+                <TableHead className="font-bold text-slate-900 whitespace-nowrap">Order ID</TableHead>
+                <TableHead className="font-bold text-slate-900 whitespace-nowrap">Customer</TableHead>
+                <TableHead className="font-bold text-slate-900 whitespace-nowrap">Date</TableHead>
+                <TableHead className="font-bold text-slate-900 whitespace-nowrap">Items</TableHead>
+                <TableHead className="font-bold text-slate-900 whitespace-nowrap">Total</TableHead>
+                <TableHead className="font-bold text-slate-900 whitespace-nowrap">Status</TableHead>
+                <TableHead className="font-bold text-slate-900 text-right whitespace-nowrap">Actions</TableHead>
               </TableRow>
-            ) : (
-              filteredOrders.map((order) => (
-                <TableRow key={order.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
-                  <TableCell className="font-mono text-xs font-bold text-slate-500">
-                    {order.order_number}
-                  </TableCell>
-                  <TableCell className="font-medium">{order.customer_name}</TableCell>
-                  <TableCell className="text-slate-500 text-sm">
-                    {format(new Date(order.created_date), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {order.items.reduce((acc, i) => acc + i.quantity, 0)} items
-                  </TableCell>
-                  <TableCell className="font-bold">₹{order.total}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`capitalize rounded-full px-3 py-0.5 border-none ${statusColors[order.status]}`}>
-                      {order.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="rounded-full w-10 h-10 p-0 hover:bg-brand-500/10 hover:text-brand-500"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
+            </TableHeader>
+            <TableBody>
+              {filteredOrders.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-32 text-center text-slate-400">
+                    No orders found
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                filteredOrders.map((order) => (
+                  <TableRow key={order.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
+                    <TableCell className="font-mono text-xs font-bold text-slate-500 whitespace-nowrap">
+                      {order.order_number}
+                    </TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">{order.customer_name}</TableCell>
+                    <TableCell className="text-slate-500 text-sm whitespace-nowrap">
+                      {format(new Date(order.created_date), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {order.items.reduce((acc, i) => acc + i.quantity, 0)} items
+                    </TableCell>
+                    <TableCell className="font-bold whitespace-nowrap">₹{order.total}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <Badge variant="outline" className={`capitalize rounded-full px-3 py-0.5 border-none ${statusColors[order.status]}`}>
+                        {order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="rounded-full w-10 h-10 p-0 hover:bg-brand-500/10 hover:text-brand-500"
+                        onClick={() => setSelectedOrder(order)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>

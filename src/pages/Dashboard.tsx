@@ -54,14 +54,14 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-12">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-bold font-display mb-2">Business Overview</h1>
-          <p className="text-slate-500">Welcome back! Here's what's happening with your shop today.</p>
+          <h1 className="text-3xl md:text-4xl font-bold font-display mb-2">Business Overview</h1>
+          <p className="text-slate-500 text-sm md:text-base">Welcome back! Here's what's happening with your shop today.</p>
         </div>
         <Button 
           onClick={() => navigate("/admin/billing")}
-          className="bg-brand-500 hover:bg-brand-600 text-white rounded-2xl px-8 h-12 font-bold shadow-lg shadow-brand-500/20"
+          className="w-full md:w-auto bg-brand-500 hover:bg-brand-600 text-white rounded-2xl px-8 h-12 font-bold shadow-lg shadow-brand-500/20"
         >
           <ShoppingCart className="w-5 h-5 mr-2" />
           New Sale
