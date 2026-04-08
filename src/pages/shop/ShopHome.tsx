@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ShoppingBag, Search, Filter, ShoppingCart, Plus, Minus, X, CreditCard, User, MapPin, Phone, Package, LogOut, History, Settings, Lock, ArrowRight, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { dataService } from "../../services/dataService";
-import { Product, LineItem, Order } from "../../types";
+import { Product, LineItem, Order, Address } from "../../types";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
@@ -26,17 +26,28 @@ export default function ShopHome() {
 
   useEffect(() => {
     if (isCheckoutOpen && user) {
+      const defaultAddr = user.addresses?.find((a: Address) => a.isDefault) || user.addresses?.[0];
       setCustomerInfo({
         name: user.name || "",
         phone: user.mobile || "",
-        address: user.addresses?.[0] || ""
+        address: defaultAddr ? `${defaultAddr.flatNo}, ${defaultAddr.locality}, ${defaultAddr.city}, ${defaultAddr.state} - ${defaultAddr.pincode}` : ""
       });
     }
   }, [isCheckoutOpen, user]);
   const [accountView, setAccountView] = useState<"menu" | "history" | "addresses" | "settings">("menu");
   const [userOrders, setUserOrders] = useState<Order[]>([]);
-  const [profileForm, setProfileForm] = useState({ name: "", age: "", mobile: "" });
-  const [newAddress, setNewAddress] = useState("");
+  const [profileForm, setProfileForm] = useState({ 
+    firstName: "", 
+    lastName: "", 
+    screenName: "", 
+    email: "", 
+    dob: "", 
+    gender: "" 
+  });
+  const [newAddressForm, setNewAddressForm] = useState<Partial<Address>>({
+    type: 'Home',
+    isDefault: false
+  });
   const [categories, setCategories] = useState<{ id: string; label: string }[]>([]);
   const navigate = useNavigate();
 
@@ -61,9 +72,12 @@ export default function ShopHome() {
         const orders = await dataService.getUserOrders(identifier);
         setUserOrders(orders);
         setProfileForm({ 
-          name: currentUser.name, 
-          age: currentUser.age?.toString() || "", 
-          mobile: currentUser.mobile || currentUser.id || "" 
+          firstName: currentUser.firstName || currentUser.name?.split(' ')[0] || "", 
+          lastName: currentUser.lastName || currentUser.name?.split(' ').slice(1).join(' ') || "", 
+          screenName: currentUser.screenName || currentUser.name || "",
+          email: currentUser.email || "",
+          dob: currentUser.dob || "",
+          gender: currentUser.gender || ""
         });
       }
     };
@@ -77,9 +91,12 @@ export default function ShopHome() {
         const orders = await dataService.getUserOrders(identifier);
         setUserOrders(orders);
         setProfileForm({ 
-          name: updatedUser.name, 
-          age: updatedUser.age?.toString() || "", 
-          mobile: updatedUser.mobile || updatedUser.id || "" 
+          firstName: updatedUser.firstName || updatedUser.name?.split(' ')[0] || "", 
+          lastName: updatedUser.lastName || updatedUser.name?.split(' ').slice(1).join(' ') || "", 
+          screenName: updatedUser.screenName || updatedUser.name || "",
+          email: updatedUser.email || "",
+          dob: updatedUser.dob || "",
+          gender: updatedUser.gender || ""
         });
       } else {
         setUserOrders([]);
@@ -115,9 +132,13 @@ export default function ShopHome() {
     if (!user) return;
     const updated = {
       ...user,
-      name: profileForm.name,
-      age: profileForm.age ? parseInt(profileForm.age) : undefined,
-      mobile: profileForm.mobile
+      firstName: profileForm.firstName,
+      lastName: profileForm.lastName,
+      screenName: profileForm.screenName,
+      email: profileForm.email,
+      dob: profileForm.dob,
+      gender: profileForm.gender,
+      name: `${profileForm.firstName} ${profileForm.lastName}`.trim()
     };
     await dataService.updateUser(updated);
     toast.success("Profile updated!");
@@ -125,21 +146,46 @@ export default function ShopHome() {
 
   const handleAddAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !newAddress) return;
+    if (!user || !newAddressForm.pincode || !newAddressForm.city || !newAddressForm.state || !newAddressForm.locality || !newAddressForm.flatNo || !newAddressForm.name || !newAddressForm.phone) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+    
+    const newAddr: Address = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: newAddressForm.name,
+      phone: newAddressForm.phone,
+      pincode: newAddressForm.pincode,
+      city: newAddressForm.city,
+      state: newAddressForm.state,
+      locality: newAddressForm.locality,
+      flatNo: newAddressForm.flatNo,
+      landmark: newAddressForm.landmark || "",
+      type: newAddressForm.type as 'Home' | 'Office' | 'Other',
+      isDefault: newAddressForm.isDefault || false
+    };
+
+    let updatedAddresses = [...(user.addresses || [])];
+    if (newAddr.isDefault) {
+      updatedAddresses = updatedAddresses.map(a => ({ ...a, isDefault: false }));
+    }
+    updatedAddresses.push(newAddr);
+
     const updated = {
       ...user,
-      addresses: [...user.addresses, newAddress]
+      addresses: updatedAddresses
     };
     await dataService.updateUser(updated);
-    setNewAddress("");
+    setNewAddressForm({ type: 'Home', isDefault: false });
     toast.success("Address added!");
+    setAccountView("addresses"); // Go back to list if needed
   };
 
-  const removeAddress = async (addr: string) => {
+  const removeAddress = async (addrId: string) => {
     if (!user) return;
     const updated = {
       ...user,
-      addresses: user.addresses.filter(a => a !== addr)
+      addresses: user.addresses.filter((a: Address) => a.id !== addrId)
     };
     await dataService.updateUser(updated);
     toast.success("Address removed");
@@ -367,82 +413,223 @@ export default function ShopHome() {
                       )}
 
                       {accountView === "addresses" && (
-                        <div className="py-6 space-y-6">
-                          <form onSubmit={handleAddAddress} className="space-y-3">
-                            <Label className="text-[#8c7e6d] ml-1">Add New Address</Label>
-                            <div className="flex gap-2">
-                              <Input 
-                                value={newAddress}
-                                onChange={(e) => setNewAddress(e.target.value)}
-                                placeholder="Enter full address..."
-                                className="rounded-xl border-[#ece4d5] bg-white"
-                              />
-                              <Button type="submit" size="icon" className="bg-[#3a322b] shrink-0">
-                                <Plus className="w-4 h-4" />
-                              </Button>
+                        <div className="py-6 space-y-6 px-4">
+                          <form onSubmit={handleAddAddress} className="space-y-6">
+                            <div>
+                              <h4 className="font-bold text-[#3a322b] mb-4">Contact Info</h4>
+                              <div className="space-y-4">
+                                <div className="space-y-1">
+                                  <Label className="text-[#8c7e6d] text-xs">Name</Label>
+                                  <Input 
+                                    value={newAddressForm.name || ""}
+                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, name: e.target.value }))}
+                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
+                                    required
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-[#8c7e6d] text-xs">Phone Number (+91)</Label>
+                                  <Input 
+                                    value={newAddressForm.phone || ""}
+                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, phone: e.target.value }))}
+                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
+                                    required
+                                  />
+                                </div>
+                              </div>
                             </div>
+
+                            <div>
+                              <h4 className="font-bold text-[#3a322b] mb-4">Address Info</h4>
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <Label className="text-[#8c7e6d] text-xs">Pincode</Label>
+                                    <Input 
+                                      value={newAddressForm.pincode || ""}
+                                      onChange={(e) => setNewAddressForm(prev => ({ ...prev, pincode: e.target.value }))}
+                                      className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
+                                      required
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-[#8c7e6d] text-xs">City</Label>
+                                    <Input 
+                                      value={newAddressForm.city || ""}
+                                      onChange={(e) => setNewAddressForm(prev => ({ ...prev, city: e.target.value }))}
+                                      className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
+                                      required
+                                    />
+                                  </div>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-[#8c7e6d] text-xs">State</Label>
+                                  <Input 
+                                    value={newAddressForm.state || ""}
+                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, state: e.target.value }))}
+                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
+                                    required
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-[#8c7e6d] text-xs">Locality / Area / Street</Label>
+                                  <Input 
+                                    value={newAddressForm.locality || ""}
+                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, locality: e.target.value }))}
+                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
+                                    required
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-[#8c7e6d] text-xs">Flat no / Building Name</Label>
+                                  <Input 
+                                    value={newAddressForm.flatNo || ""}
+                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, flatNo: e.target.value }))}
+                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
+                                    required
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-[#8c7e6d] text-xs">Landmark (optional)</Label>
+                                  <Input 
+                                    value={newAddressForm.landmark || ""}
+                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, landmark: e.target.value }))}
+                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <h4 className="font-bold text-[#3a322b] mb-4">Type of Address</h4>
+                              <div className="flex gap-6 mb-6">
+                                {['Home', 'Office', 'Other'].map(type => (
+                                  <label key={type} className="flex items-center gap-2 cursor-pointer">
+                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${newAddressForm.type === type ? 'border-[#3a322b]' : 'border-[#8c7e6d]'}`}>
+                                      {newAddressForm.type === type && <div className="w-2 h-2 bg-[#3a322b] rounded-full" />}
+                                    </div>
+                                    <span className="text-sm text-[#3a322b]">{type}</span>
+                                  </label>
+                                ))}
+                              </div>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${newAddressForm.isDefault ? 'border-[#3a322b] bg-[#3a322b]' : 'border-[#8c7e6d]'}`}>
+                                  {newAddressForm.isDefault && <div className="w-3 h-3 bg-white" style={{ clipPath: 'polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%)' }} />}
+                                </div>
+                                <span className="text-sm text-[#3a322b]">Make as default address</span>
+                              </label>
+                            </div>
+
+                            <Button type="submit" className="w-full h-12 bg-[#1a1a1a] text-white rounded-lg font-bold">
+                              Save Address
+                            </Button>
                           </form>
 
-                          <div className="space-y-3">
-                            <Label className="text-[#8c7e6d] ml-1">Your Addresses</Label>
-                            {!user.addresses || user.addresses.length === 0 ? (
-                              <p className="text-sm text-[#8c7e6d] italic p-4 text-center">No saved addresses</p>
-                            ) : (
-                              user.addresses.map((addr: string, idx: number) => (
-                                <div key={idx} className="flex items-start justify-between p-4 bg-white rounded-2xl border border-[#ece4d5] group">
-                                  <div className="flex gap-3">
-                                    <MapPin className="w-4 h-4 text-[#b0966a] mt-1" />
-                                    <p className="text-sm text-[#4a3f35] leading-relaxed">{addr}</p>
+                          {user.addresses && user.addresses.length > 0 && (
+                            <div className="space-y-4 pt-8 border-t border-[#ece4d5]">
+                              <Label className="text-[#8c7e6d] font-bold">Saved Addresses</Label>
+                              {user.addresses.map((addr: Address) => (
+                                <div key={addr.id} className="p-4 bg-white rounded-xl border border-[#ece4d5] relative">
+                                  {addr.isDefault && <Badge className="absolute top-4 right-4 bg-[#f7f3eb] text-[#b0966a] border-none">Default</Badge>}
+                                  <div className="flex gap-2 items-center mb-2">
+                                    <span className="font-bold text-[#3a322b]">{addr.name}</span>
+                                    <Badge variant="outline" className="text-xs">{addr.type}</Badge>
                                   </div>
+                                  <p className="text-sm text-[#4a3f35] leading-relaxed mb-1">{addr.flatNo}, {addr.locality}</p>
+                                  <p className="text-sm text-[#4a3f35] leading-relaxed mb-2">{addr.city}, {addr.state} - {addr.pincode}</p>
+                                  <p className="text-sm text-[#4a3f35] font-medium">Phone: {addr.phone}</p>
                                   <button 
-                                    onClick={() => removeAddress(addr)}
-                                    className="p-1 text-red-400 hover:text-red-600 transition-colors"
+                                    onClick={() => removeAddress(addr.id)}
+                                    className="absolute bottom-4 right-4 text-xs text-red-500 hover:underline"
                                   >
-                                    <X className="w-4 h-4" />
+                                    Remove
                                   </button>
                                 </div>
-                              ))
-                            )}
-                          </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
 
                       {accountView === "settings" && (
-                        <form onSubmit={handleUpdateProfile} className="py-6 space-y-6">
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label className="text-[#8c7e6d] ml-1">Full Name</Label>
+                        <form onSubmit={handleUpdateProfile} className="py-6 px-4 space-y-8">
+                          <div className="space-y-6">
+                            <div className="space-y-1">
+                              <Label className="text-[#8c7e6d] text-xs">First Name*</Label>
                               <Input 
-                                value={profileForm.name}
-                                onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
-                                className="h-12 rounded-xl border-[#ece4d5] bg-white"
+                                value={profileForm.firstName}
+                                onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
+                                className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
                                 required
                               />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label className="text-[#8c7e6d] ml-1">Age</Label>
-                                <Input 
-                                  type="number"
-                                  value={profileForm.age}
-                                  onChange={(e) => setProfileForm(prev => ({ ...prev, age: e.target.value }))}
-                                  className="h-12 rounded-xl border-[#ece4d5] bg-white"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-[#8c7e6d] ml-1">Mobile</Label>
-                                <Input 
-                                  value={profileForm.mobile}
-                                  onChange={(e) => setProfileForm(prev => ({ ...prev, mobile: e.target.value }))}
-                                  className="h-12 rounded-xl border-[#ece4d5] bg-white"
-                                  placeholder="+91..."
-                                />
+                            <div className="space-y-1">
+                              <Label className="text-[#8c7e6d] text-xs">Last Name*</Label>
+                              <Input 
+                                value={profileForm.lastName}
+                                onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
+                                className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[#8c7e6d] text-xs">Screen Name*</Label>
+                              <Input 
+                                value={profileForm.screenName}
+                                onChange={(e) => setProfileForm(prev => ({ ...prev, screenName: e.target.value }))}
+                                className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div className="pt-6 border-t border-[#ece4d5] space-y-1">
+                            <Label className="text-[#8c7e6d] text-xs">Email Address*</Label>
+                            <div className="flex justify-between items-end border-b border-[#ece4d5] pb-1">
+                              <Input 
+                                value={profileForm.email}
+                                onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
+                                className="border-0 rounded-none px-0 h-auto py-1 focus-visible:ring-0"
+                                required
+                              />
+                              <button type="button" className="text-[#008296] text-sm font-medium whitespace-nowrap mb-1">Change</button>
+                            </div>
+                          </div>
+
+                          <div className="bg-[#f8f9fa] p-4 rounded-xl space-y-6">
+                            <div className="space-y-1">
+                              <Label className="text-[#8c7e6d] text-xs">Date of birth</Label>
+                              <Input 
+                                type="date"
+                                value={profileForm.dob}
+                                onChange={(e) => setProfileForm(prev => ({ ...prev, dob: e.target.value }))}
+                                className="border-0 border-b border-[#ece4d5] bg-transparent rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
+                              />
+                            </div>
+                            
+                            <div>
+                              <Label className="text-[#8c7e6d] text-xs mb-3 block">Gender</Label>
+                              <div className="flex gap-8">
+                                {['Female', 'Male'].map(gender => (
+                                  <label key={gender} className="flex items-center gap-3 cursor-pointer">
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${profileForm.gender === gender ? 'border-[#1a1a1a]' : 'border-[#8c7e6d]'}`}>
+                                      {profileForm.gender === gender && <div className="w-2.5 h-2.5 bg-[#1a1a1a] rounded-full" />}
+                                    </div>
+                                    <span className="text-[#3a322b]">{gender}</span>
+                                  </label>
+                                ))}
                               </div>
                             </div>
                           </div>
-                          <Button type="submit" className="w-full h-12 bg-[#3a322b] rounded-xl font-bold">
-                            Save Changes
-                          </Button>
+
+                          <div className="flex gap-4 pt-4">
+                            <Button type="button" variant="outline" className="flex-1 h-12 rounded-lg font-bold border-[#ece4d5]">
+                              Reset
+                            </Button>
+                            <Button type="submit" className="flex-1 h-12 bg-[#1a1a1a] text-white rounded-lg font-bold">
+                              Update
+                            </Button>
+                          </div>
                         </form>
                       )}
                     </div>
@@ -800,20 +987,23 @@ export default function ShopHome() {
                 </Label>
                 {user && user.addresses && user.addresses.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {user.addresses.map((addr: string, idx: number) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setCustomerInfo(prev => ({ ...prev, address: addr }))}
-                        className={`text-[10px] px-3 py-1 rounded-full border transition-all ${
-                          customerInfo.address === addr 
-                            ? "bg-[#3a322b] text-white border-[#3a322b]" 
-                            : "bg-white text-[#8c7e6d] border-[#ece4d5] hover:border-[#b0966a]"
-                        }`}
-                      >
-                        Address {idx + 1}
-                      </button>
-                    ))}
+                    {user.addresses.map((addr: Address, idx: number) => {
+                      const addrString = `${addr.flatNo}, ${addr.locality}, ${addr.city}, ${addr.state} - ${addr.pincode}`;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setCustomerInfo(prev => ({ ...prev, address: addrString }))}
+                          className={`text-[10px] px-3 py-1 rounded-full border transition-all ${
+                            customerInfo.address === addrString 
+                              ? "bg-[#3a322b] text-white border-[#3a322b]" 
+                              : "bg-white text-[#8c7e6d] border-[#ece4d5] hover:border-[#b0966a]"
+                          }`}
+                        >
+                          {addr.name} ({addr.type})
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
                 <Input 

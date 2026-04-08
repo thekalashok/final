@@ -3,15 +3,33 @@ export type ProductStatus = "active" | "inactive" | "out_of_stock";
 export type OrderStatus = "pending" | "confirmed" | "processing" | "completed" | "cancelled";
 export type PaymentMethod = "cash" | "UPI";
 
+export interface Address {
+  id: string;
+  name: string;
+  phone: string;
+  pincode: string;
+  city: string;
+  state: string;
+  locality: string;
+  flatNo: string;
+  landmark?: string;
+  type: 'Home' | 'Office' | 'Other';
+  isDefault: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
+  screenName?: string;
   email: string;
   password?: string;
   age?: number;
+  dob?: string;
   mobile?: string;
   gender?: string;
-  addresses: string[];
+  addresses: Address[];
   role?: 'admin' | 'user';
   created_date: string;
 }

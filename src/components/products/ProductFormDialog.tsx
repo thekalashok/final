@@ -38,7 +38,7 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
 
   useEffect(() => {
     if (open) {
-      setCategories(dataService.getCategories());
+      dataService.getCategories().then(setCategories);
       setIsDeleting(false);
     }
     if (product) {
@@ -68,7 +68,7 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
       price: Number(formData.price) || 0,
       cost_price: Number(formData.cost_price) || 0,
       stock: Number(formData.stock) || 0,
-      image_url: formData.image_url || `https://picsum.photos/seed/${formData.name}/400/400`,
+      image_url: formData.image_url || `https://picsum.photos/seed/${encodeURIComponent(formData.name || 'product')}/400/400`,
       sku: formData.sku || `SKU-${Date.now()}`,
       status: formData.status || "active",
       created_date: product?.created_date || new Date().toISOString(),

@@ -16,7 +16,14 @@ export default function Login() {
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [channel, setChannel] = useState<'sms' | 'whatsapp'>('sms');
-  const [profileData, setProfileData] = useState({ name: "", email: "", gender: "" });
+  const [profileData, setProfileData] = useState({ 
+    firstName: "", 
+    lastName: "", 
+    screenName: "", 
+    email: "", 
+    dob: "", 
+    gender: "" 
+  });
   const navigate = useNavigate();
 
   const handlePhoneSubmit = async (e: FormEvent) => {
@@ -42,7 +49,7 @@ export default function Login() {
 
   const handleDetailsSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!profileData.name || !profileData.email) {
+    if (!profileData.firstName || !profileData.lastName || !profileData.email) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -176,10 +183,28 @@ export default function Login() {
                 
                 <form onSubmit={handleDetailsSubmit} className="space-y-6">
                   <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input 
+                        type="text"
+                        placeholder="First Name*"
+                        required
+                        className="h-12 bg-[#fdfbf7] border-[#ece4d5] focus-visible:ring-[#9c27b0]"
+                        value={profileData.firstName}
+                        onChange={(e) => setProfileData({...profileData, firstName: e.target.value})}
+                      />
+                      <Input 
+                        type="text"
+                        placeholder="Last Name*"
+                        required
+                        className="h-12 bg-[#fdfbf7] border-[#ece4d5] focus-visible:ring-[#9c27b0]"
+                        value={profileData.lastName}
+                        onChange={(e) => setProfileData({...profileData, lastName: e.target.value})}
+                      />
+                    </div>
                     <div>
                       <Input 
                         type="email"
-                        placeholder="Email ID*"
+                        placeholder="Email Address*"
                         required
                         className="h-12 bg-[#fdfbf7] border-[#ece4d5] focus-visible:ring-[#9c27b0]"
                         value={profileData.email}
@@ -189,16 +214,24 @@ export default function Login() {
                     <div>
                       <Input 
                         type="text"
-                        placeholder="Name*"
-                        required
+                        placeholder="Screen Name (optional)"
                         className="h-12 bg-[#fdfbf7] border-[#ece4d5] focus-visible:ring-[#9c27b0]"
-                        value={profileData.name}
-                        onChange={(e) => setProfileData({...profileData, name: e.target.value})}
+                        value={profileData.screenName}
+                        onChange={(e) => setProfileData({...profileData, screenName: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Input 
+                        type="date"
+                        placeholder="Date of birth (optional)"
+                        className="h-12 bg-[#fdfbf7] border-[#ece4d5] focus-visible:ring-[#9c27b0]"
+                        value={profileData.dob}
+                        onChange={(e) => setProfileData({...profileData, dob: e.target.value})}
                       />
                     </div>
                     
                     <div className="space-y-2 pt-2">
-                      <Label className="text-[#8c7e6d] text-xs">Gender</Label>
+                      <Label className="text-[#8c7e6d] text-xs">Gender (optional)</Label>
                       <div className="flex gap-3">
                         {['Female', 'Male', 'Other'].map((g) => (
                           <button
@@ -224,7 +257,7 @@ export default function Login() {
 
                   <Button 
                     type="submit"
-                    disabled={isLoading || !profileData.name || !profileData.email}
+                    disabled={isLoading || !profileData.firstName || !profileData.lastName || !profileData.email}
                     className="w-full bg-[#3a322b] hover:bg-[#4a3f35] h-12 rounded-md text-base font-bold text-white transition-all"
                   >
                     {isLoading ? "Sending OTP..." : "Continue"}

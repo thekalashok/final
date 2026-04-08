@@ -218,7 +218,7 @@ export const dataService = {
     }
   },
 
-  verifyOTP: async (phoneNumber: string, otp: string, profileData?: { name: string, email: string, gender: string }): Promise<User> => {
+  verifyOTP: async (phoneNumber: string, otp: string, profileData?: { firstName?: string, lastName?: string, screenName?: string, email?: string, dob?: string, gender?: string }): Promise<User> => {
     try {
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
@@ -246,14 +246,19 @@ export const dataService = {
         } as User;
       } else {
         // Create new user document if it doesn't exist
+        const isAdmin = profileData?.email === "rajukumbhar2323@gmail.com" || profileData?.email === "admin@kalaa.com";
         const newUser: User = {
           id: firebaseUser.uid,
-          name: profileData?.name || phoneNumber,
+          name: profileData?.firstName && profileData?.lastName ? `${profileData.firstName} ${profileData.lastName}`.trim() : phoneNumber,
+          firstName: profileData?.firstName,
+          lastName: profileData?.lastName,
+          screenName: profileData?.screenName,
           email: profileData?.email || "",
           mobile: phoneNumber,
+          dob: profileData?.dob,
           gender: profileData?.gender,
           addresses: [],
-          role: 'user',
+          role: isAdmin ? 'admin' : 'user',
           created_date: new Date().toISOString(),
         };
         await setDoc(userDocRef, newUser);

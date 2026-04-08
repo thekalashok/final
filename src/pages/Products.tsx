@@ -31,10 +31,14 @@ export default function Products() {
   };
 
   const handleSave = async (product: Product) => {
-    await dataService.saveProduct(product);
-    setIsDialogOpen(false);
-    setEditingProduct(null);
-    toast.success(editingProduct ? "Product updated!" : "Product created!");
+    try {
+      await dataService.saveProduct(product);
+      setIsDialogOpen(false);
+      setEditingProduct(null);
+      toast.success(editingProduct ? "Product updated!" : "Product created!");
+    } catch (error: any) {
+      toast.error("Failed to save product. Please check permissions or data.");
+    }
   };
 
   const handleDelete = async (id: string) => {
