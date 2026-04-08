@@ -56,12 +56,14 @@ export default function ShopHome() {
       const currentUser = dataService.getCurrentUser();
       setUser(currentUser);
       if (currentUser) {
-        const orders = await dataService.getUserOrders(currentUser.email);
+        // Wait for onAuthChange to get the full user doc with mobile, or use uid as fallback since uid is phone number for phone auth
+        const identifier = currentUser.mobile || currentUser.email || currentUser.id;
+        const orders = await dataService.getUserOrders(identifier);
         setUserOrders(orders);
         setProfileForm({ 
           name: currentUser.name, 
           age: currentUser.age?.toString() || "", 
-          mobile: currentUser.mobile || "" 
+          mobile: currentUser.mobile || currentUser.id || "" 
         });
       }
     };
@@ -71,12 +73,13 @@ export default function ShopHome() {
     const unsubscribeAuth = dataService.onAuthChange(async (updatedUser) => {
       setUser(updatedUser);
       if (updatedUser) {
-        const orders = await dataService.getUserOrders(updatedUser.email);
+        const identifier = updatedUser.mobile || updatedUser.email || updatedUser.id;
+        const orders = await dataService.getUserOrders(identifier);
         setUserOrders(orders);
         setProfileForm({ 
           name: updatedUser.name, 
           age: updatedUser.age?.toString() || "", 
-          mobile: updatedUser.mobile || "" 
+          mobile: updatedUser.mobile || updatedUser.id || "" 
         });
       } else {
         setUserOrders([]);

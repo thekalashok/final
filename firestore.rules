@@ -99,7 +99,7 @@ service cloud.firestore {
     }
 
     function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+      return email is string && (email == "" || email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"));
     }
 
     function isValidUrl(url) {
@@ -156,7 +156,7 @@ service cloud.firestore {
     }
 
     match /orders/{orderId} {
-      allow read: if isAdmin() || (isAuthenticated() && (resource.data.customer_phone == request.auth.token.email || resource.data.customer_name == request.auth.token.email));
+      allow read: if isAdmin() || (isAuthenticated() && (resource.data.customer_phone == request.auth.token.email || resource.data.customer_name == request.auth.token.email || resource.data.customer_phone == request.auth.uid));
       allow create: if true; // Allow customers to place orders
       allow update: if isAdmin();
       allow delete: if isAdmin();

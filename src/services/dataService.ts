@@ -20,6 +20,7 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithCustomToken,
   User as FirebaseUser
 } from "firebase/auth";
 import { db, auth } from "../firebase";
@@ -110,8 +111,9 @@ export const dataService = {
     if (!user) return null;
     return {
       id: user.uid,
-      name: user.displayName || user.email?.split('@')[0] || "",
+      name: user.displayName || user.email?.split('@')[0] || user.uid,
       email: user.email || "",
+      mobile: user.phoneNumber || user.uid,
       addresses: [],
       created_date: new Date().toISOString(),
     };
@@ -180,6 +182,70 @@ export const dataService = {
     } catch (error) {
       console.error("Google login error:", error);
       return null;
+    }
+  },
+
+  sendOTP: async (phoneNumber: string, channel: 'sms' | 'whatsapp' = 'sms'): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber, channel })
+      });
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || "Failed to send OTP");
+      }
+      return true;
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      return false;
+    }
+  },
+
+  verifyOTP: async (phoneNumber: string, otp: string): Promise<User> => {
+    try {
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber, otp })
+      });
+      const data = await response.json();
+      
+      if (!data.success || !data.token) {
+        throw new Error(data.error || "Verification failed");
+      }
+
+      // Sign in with custom token
+      const result = await signInWithCustomToken(auth, data.token);
+      const firebaseUser = result.user;
+      
+      const userDocRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return {
+          ...userData,
+          addresses: userData.addresses || []
+        } as User;
+      } else {
+        // Create new user document if it doesn't exist
+        const newUser: User = {
+          id: firebaseUser.uid,
+          name: phoneNumber,
+          email: "",
+          mobile: phoneNumber,
+          addresses: [],
+          role: 'user',
+          created_date: new Date().toISOString(),
+        };
+        await setDoc(userDocRef, newUser);
+        return newUser;
+      }
+    } catch (error: any) {
+      console.error("Error verifying OTP:", error);
+      throw error;
     }
   },
 
