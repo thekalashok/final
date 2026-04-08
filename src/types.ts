@@ -1,0 +1,68 @@
+export type ProductCategory = string;
+export type ProductStatus = "active" | "inactive" | "out_of_stock";
+export type OrderStatus = "pending" | "confirmed" | "processing" | "completed" | "cancelled";
+export type PaymentMethod = "cash" | "UPI";
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  age?: number;
+  mobile?: string;
+  addresses: string[];
+  created_date: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  category: ProductCategory;
+  price: number;
+  cost_price: number;
+  stock: number;
+  image_url: string;
+  sku: string;
+  status: ProductStatus;
+  created_date: string;
+  updated_date: string;
+  created_by: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  notes: string;
+  created_date: string;
+  updated_date: string;
+  created_by: string;
+}
+
+export interface LineItem {
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+}
+
+export interface Order {
+  id: string;
+  order_number: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_address: string;
+  items: LineItem[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  payment_method: PaymentMethod;
+  status: OrderStatus;
+  created_date: string;
+  updated_date: string;
+  created_by: string;
+}

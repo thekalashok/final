@@ -1,0 +1,27 @@
+import { Navigate, Outlet } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { dataService } from "../../services/dataService";
+
+export default function ProtectedRoute() {
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = dataService.onAuthChange((user) => {
+      // For now, we still rely on the localStorage flag for admin status
+      // but we also check if a user is actually logged in via Firebase
+      const adminFlag = localStorage.getItem("isAdminLoggedIn") === "true";
+      setIsAdmin(!!user && adminFlag);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (isAdmin === null) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
+  return <Outlet />;
+}
