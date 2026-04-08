@@ -430,7 +430,9 @@ export const dataService = {
   getCategories: async (): Promise<string[]> => {
     try {
       const snapshot = await getDocs(collection(db, COLLECTIONS.CATEGORIES));
-      return snapshot.docs.map(doc => doc.data().name);
+      return snapshot.docs
+        .map(doc => doc.data().name)
+        .filter(name => typeof name === 'string' && name.length > 0);
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, COLLECTIONS.CATEGORIES);
       return ["amigurumi", "bags", "clothing", "accessories", "home_decor", "custom", "other"];

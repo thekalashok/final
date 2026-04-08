@@ -61,7 +61,9 @@ export default function ShopHome() {
       const dynamicCats = await dataService.getCategories();
       setCategories([
         { id: "all", label: "All" },
-        ...dynamicCats.map(cat => ({ id: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }))
+        ...dynamicCats
+          .filter(cat => typeof cat === 'string' && cat.length > 0)
+          .map(cat => ({ id: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }))
       ]);
       
       const currentUser = dataService.getCurrentUser();
@@ -110,7 +112,10 @@ export default function ShopHome() {
     const unsubscribeCategories = dataService.subscribe("CATEGORIES", (newCats) => {
       setCategories([
         { id: "all", label: "All" },
-        ...newCats.map((cat: string) => ({ id: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }))
+        ...newCats
+          .map((doc: any) => doc.name)
+          .filter((cat: any) => typeof cat === 'string' && cat.length > 0)
+          .map((cat: string) => ({ id: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }))
       ]);
     });
 
