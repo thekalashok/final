@@ -42,7 +42,10 @@ const COLLECTIONS = {
   OTPS: "otps_internal", // Using a separate collection for internal OTP storage
 };
 
-app.post("/api/auth/check-user", async (req, res) => {
+// Router for API routes to handle Netlify function pathing
+const router = express.Router();
+
+router.post("/auth/check-user", async (req, res) => {
   try {
     const { phoneNumber } = req.body;
     if (!phoneNumber) return res.status(400).json({ error: "Phone number required" });
@@ -68,7 +71,7 @@ app.post("/api/auth/check-user", async (req, res) => {
   }
 });
 
-app.post("/api/auth/send-otp", async (req, res) => {
+router.post("/auth/send-otp", async (req, res) => {
   try {
     const { phoneNumber, channel } = req.body;
     if (!phoneNumber) return res.status(400).json({ error: "Phone number required" });
@@ -114,7 +117,7 @@ app.post("/api/auth/send-otp", async (req, res) => {
       } catch (twilioError: any) {
         console.error("Twilio API Error:", twilioError);
         if (twilioError.code === 20003) {
-          return res.status(500).json({ error: "Twilio Authentication Failed. Please check your TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in the Secrets panel." });
+          return res.status(500).json({ error: "Twilio Authentication Failed. Please check your TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in the Netlify Environment Variables." });
         }
         throw twilioError;
       }
@@ -130,7 +133,7 @@ app.post("/api/auth/send-otp", async (req, res) => {
   }
 });
 
-app.post("/api/auth/verify-otp", async (req, res) => {
+router.post("/auth/verify-otp", async (req, res) => {
   try {
     const { phoneNumber, otp } = req.body;
     if (!phoneNumber || !otp) return res.status(400).json({ error: "Phone number and OTP required" });
@@ -183,6 +186,11 @@ app.post("/api/auth/verify-otp", async (req, res) => {
     res.status(500).json({ error: error.message || "Failed to verify OTP" });
   }
 });
+
+// Mount the router
+app.use("/api", router);
+// Also mount at root for Netlify function compatibility if needed
+app.use("/.netlify/functions/api", router);
 
 export { app };
 

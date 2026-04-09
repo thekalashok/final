@@ -61,14 +61,25 @@ export default function Login() {
   const handleSendOtp = async (fullPhoneNumber: string, selectedChannel: 'sms' | 'whatsapp') => {
     setChannel(selectedChannel);
     setIsLoading(true);
-    const success = await dataService.sendOTP(fullPhoneNumber, selectedChannel);
-    setIsLoading(false);
-    
-    if (success) {
-      setStep('otp');
-      toast.success(`OTP sent successfully via ${selectedChannel.toUpperCase()}!`);
-    } else {
-      toast.error("Failed to send OTP. Please check backend configuration.");
+    try {
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: fullPhoneNumber, channel: selectedChannel })
+      });
+      const data = await response.json();
+      setIsLoading(false);
+      
+      if (data.success) {
+        setStep('otp');
+        toast.success(`OTP sent successfully via ${selectedChannel.toUpperCase()}!`);
+      } else {
+        toast.error(data.error || "Failed to send OTP. Please check backend configuration.");
+      }
+    } catch (error: any) {
+      setIsLoading(false);
+      toast.error("Network error. Please check if the backend is running.");
+      console.error("OTP Error:", error);
     }
   };
 
