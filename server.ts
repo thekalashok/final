@@ -42,8 +42,18 @@ const COLLECTIONS = {
   OTPS: "otps_internal", // Using a separate collection for internal OTP storage
 };
 
-// Router for API routes to handle Netlify function pathing
+// Router for API routes to handle Netlify/Vercel function pathing
 const router = express.Router();
+
+router.get("/health", (req, res) => {
+  res.json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV,
+    firebase: !!dbAdmin,
+    twilio: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN)
+  });
+});
 
 router.post("/auth/check-user", async (req, res) => {
   try {
@@ -129,6 +139,7 @@ router.post("/auth/send-otp", async (req, res) => {
     } else {
       // Fallback for development if Twilio is not configured
       console.log(`[DEV MODE] Twilio not configured. OTP for ${phoneNumber} is ${otp} (Channel: ${channel})`);
+      return res.json({ success: true, devMode: true, otp }); // Return OTP in dev mode for easier testing
     }
 
     res.json({ success: true });
