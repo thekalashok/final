@@ -32,6 +32,15 @@ export default function Products() {
   const handleSave = async (product: Product) => {
     try {
       await dataService.saveProduct(product);
+      setProducts(prev => {
+        const existingIndex = prev.findIndex(p => p.id === product.id);
+        if (existingIndex >= 0) {
+          const newProducts = [...prev];
+          newProducts[existingIndex] = product;
+          return newProducts;
+        }
+        return [...prev, product];
+      });
       setIsDialogOpen(false);
       setEditingProduct(null);
       toast.success(editingProduct ? "Product updated!" : "Product created!");
@@ -41,8 +50,13 @@ export default function Products() {
   };
 
   const handleDelete = async (id: string) => {
-    await dataService.deleteProduct(id);
-    toast.success("Product deleted successfully");
+    try {
+      await dataService.deleteProduct(id);
+      setProducts(prev => prev.filter(p => p.id !== id));
+      toast.success("Product deleted successfully");
+    } catch (error: any) {
+      toast.error("Failed to delete product.");
+    }
   };
 
   const filteredProducts = products.filter(p => 

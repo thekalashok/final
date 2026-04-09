@@ -32,6 +32,7 @@ export interface User {
   addresses: Address[];
   role?: 'admin' | 'user';
   created_date: string;
+  emailVerified?: boolean;
 }
 
 export interface Product {

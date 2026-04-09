@@ -1,120 +1,116 @@
 import { useState, FormEvent, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { Scissors } from "lucide-react";
+import { Scissors, Mail, Lock, User as UserIcon, Phone, MapPin, Calendar, ArrowRight, CheckCircle2, Chrome } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { toast } from "sonner";
 import { Toaster } from "../components/ui/sonner";
-
 import { dataService } from "../services/dataService";
+import { User } from "../types";
 
 export default function Login() {
-  const [step, setStep] = useState<'phone' | 'details' | 'otp'>('phone');
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [otp, setOtp] = useState("");
+  const [mode, setMode] = useState<'login' | 'register' | 'verify'>('login');
   const [isLoading, setIsLoading] = useState(false);
-  const [channel, setChannel] = useState<'sms' | 'whatsapp'>('sms');
-  const [profileData, setProfileData] = useState({ 
-    firstName: "", 
-    lastName: "", 
-    screenName: "", 
-    email: "", 
-    dob: "", 
-    gender: "" 
-  });
   const navigate = useNavigate();
 
-  const handlePhoneSubmit = async (e: FormEvent) => {
+  // Login state
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+
+  // Register state
+  const [regStep, setRegStep] = useState(1);
+  const [regData, setRegData] = useState({
+    firstName: "",
+    lastName: "",
+    age: "",
+    mobile: "",
+    email: "",
+    password: "",
+    address: {
+      flatNo: "",
+      locality: "",
+      city: "",
+      state: "",
+      pincode: ""
+    }
+  });
+
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
-    if (!phoneNumber || phoneNumber.length < 10) {
-      toast.error("Please enter a valid phone number");
+    if (!loginEmail || !loginPassword) {
+      toast.error("Please enter email and password");
       return;
     }
 
-    setIsLoading(true);
-    const fullPhoneNumber = `+91${phoneNumber}`;
-    const exists = await dataService.checkUserExists(fullPhoneNumber);
-    setIsLoading(false);
-
-    if (exists) {
-      // User exists, go straight to sending OTP
-      handleSendOtp(fullPhoneNumber, 'sms'); // Default to SMS for existing users, or we could ask
-    } else {
-      // New user, ask for details first
-      setStep('details');
-    }
-  };
-
-  const handleDetailsSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!profileData.firstName || !profileData.lastName || !profileData.email) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-    
-    const fullPhoneNumber = `+91${phoneNumber}`;
-    handleSendOtp(fullPhoneNumber, 'sms'); // Default to SMS, or we can add buttons here too
-  };
-
-  const handleSendOtp = async (fullPhoneNumber: string, selectedChannel: 'sms' | 'whatsapp') => {
-    setChannel(selectedChannel);
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: fullPhoneNumber, channel: selectedChannel })
-      });
-      
-      let data;
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        console.error("Non-JSON response:", text);
-        toast.error(`Server Error (${response.status}): ${text.slice(0, 100)}`);
-        setIsLoading(false);
-        return;
-      }
-
+      const user = await dataService.login(loginEmail, loginPassword);
       setIsLoading(false);
-      
-      if (data.success) {
-        setStep('otp');
-        toast.success(`OTP sent successfully via ${selectedChannel.toUpperCase()}!`);
-      } else {
-        toast.error(data.error || "Failed to send OTP. Please check backend configuration.");
-      }
-    } catch (error: any) {
-      setIsLoading(false);
-      toast.error("Network error. Please check if the backend is running.");
-      console.error("OTP Error:", error);
-    }
-  };
-
-  const handleVerifyOtp = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!otp || otp.length < 6) {
-      toast.error("Please enter a valid OTP");
-      return;
-    }
-
-    setIsLoading(true);
-    const fullPhoneNumber = `+91${phoneNumber}`;
-    try {
-      const user = await dataService.verifyOTP(fullPhoneNumber, otp, profileData);
-      setIsLoading(false);
-      
       if (user) {
+        if (!user.emailVerified) {
+          setMode('verify');
+          return;
+        }
         toast.success("Logged in successfully!");
         setTimeout(() => navigate("/"), 1000);
       }
     } catch (error: any) {
       setIsLoading(false);
-      toast.error(error.message || "Invalid OTP or verification failed");
+      toast.error(error.message || "Login failed. Please check your credentials.");
+    }
+  };
+
+  const handleRegister = async (e: FormEvent) => {
+    e.preventDefault();
+    if (regStep < 3) {
+      setRegStep(regStep + 1);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const newUser: Partial<User> & { password?: string } = {
+        firstName: regData.firstName,
+        lastName: regData.lastName,
+        name: `${regData.firstName} ${regData.lastName}`.trim(),
+        email: regData.email,
+        password: regData.password,
+        age: parseInt(regData.age),
+        mobile: regData.mobile,
+        addresses: [{
+          id: Math.random().toString(36).substr(2, 9),
+          name: `${regData.firstName} ${regData.lastName}`.trim(),
+          phone: regData.mobile,
+          flatNo: regData.address.flatNo,
+          locality: regData.address.locality,
+          city: regData.address.city,
+          state: regData.address.state,
+          pincode: regData.address.pincode,
+          type: 'Home',
+          isDefault: true
+        }]
+      };
+
+      await dataService.register(newUser);
+      setIsLoading(false);
+      setMode('verify');
+      toast.success("Account created! Please verify your email.");
+    } catch (error: any) {
+      setIsLoading(false);
+      toast.error(error.message || "Registration failed.");
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      await dataService.loginWithGoogle();
+      // Redirection happens, so we don't need to do anything else here
+    } catch (error: any) {
+      setIsLoading(false);
+      toast.error("Google login failed.");
     }
   };
 
@@ -128,213 +124,306 @@ export default function Login() {
         className="w-full max-w-md"
       >
         <div className="bg-white rounded-[2.5rem] shadow-xl shadow-[#3a322b]/5 p-8 md:p-12 border border-[#ece4d5]">
-          <div className="flex flex-col items-center mb-10">
+          <div className="flex flex-col items-center mb-8">
             <div className="w-16 h-16 bg-[#3a322b] rounded-2xl flex items-center justify-center mb-6 shadow-lg">
               <Scissors className="text-white w-8 h-8" />
             </div>
             <h1 className="font-serif text-3xl font-bold text-[#4a3f35] uppercase tracking-widest">
               KALAA
             </h1>
-            <p className="text-[#8c7e6d] text-sm mt-2 text-center">
-              Join our community of craft lovers
-            </p>
           </div>
 
           <AnimatePresence mode="wait">
-            {step === 'phone' && (
+            {mode === 'login' && (
               <motion.div
-                key="phone-step"
+                key="login"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 className="space-y-6"
               >
-                <div className="mb-6">
-                  <h2 className="text-xl font-bold text-[#3a322b] mb-1">Sign In / Sign Up</h2>
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-bold text-[#3a322b]">Welcome Back</h2>
+                  <p className="text-[#8c7e6d] text-sm">Sign in to your account</p>
                 </div>
-                
-                <form onSubmit={handlePhoneSubmit} className="space-y-6">
+
+                <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <div className="flex gap-4">
-                      <div className="w-24">
-                        <Label className="text-[#8c7e6d] text-xs">Country</Label>
-                        <div className="h-12 border-b border-[#ece4d5] flex items-center font-bold text-[#3a322b]">
-                          IN +91
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <Label className="text-[#8c7e6d] text-xs">Phone Number</Label>
-                        <Input 
-                          type="tel"
-                          placeholder="Phone Number"
-                          className="h-12 border-0 border-b border-[#ece4d5] rounded-none px-0 bg-transparent focus-visible:ring-0 focus-visible:border-[#9c27b0] text-lg"
-                          value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                          maxLength={10}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button 
-                    type="submit"
-                    disabled={isLoading || phoneNumber.length < 10}
-                    className="w-full bg-[#3a322b] hover:bg-[#4a3f35] h-12 rounded-md text-base font-bold text-white transition-all"
-                  >
-                    {isLoading ? "Checking..." : "Continue"}
-                  </Button>
-                </form>
-              </motion.div>
-            )}
-
-            {step === 'details' && (
-              <motion.div
-                key="details-step"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="space-y-6"
-              >
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-[#3a322b] mb-1">Welcome to KALAA</h2>
-                  <div className="flex items-center gap-2 text-sm text-[#8c7e6d]">
-                    <span>Mobile Number: 91{phoneNumber}</span>
-                    <button onClick={() => setStep('phone')} className="text-[#9c27b0] font-medium hover:underline">Edit</button>
-                  </div>
-                  <p className="text-xs text-[#8c7e6d] mt-2">OTP will be sent to this number for verification</p>
-                </div>
-                
-                <form onSubmit={handleDetailsSubmit} className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input 
-                        type="text"
-                        placeholder="First Name*"
-                        required
-                        className="h-12 bg-[#fdfbf7] border-[#ece4d5] focus-visible:ring-[#9c27b0]"
-                        value={profileData.firstName}
-                        onChange={(e) => setProfileData({...profileData, firstName: e.target.value})}
-                      />
-                      <Input 
-                        type="text"
-                        placeholder="Last Name*"
-                        required
-                        className="h-12 bg-[#fdfbf7] border-[#ece4d5] focus-visible:ring-[#9c27b0]"
-                        value={profileData.lastName}
-                        onChange={(e) => setProfileData({...profileData, lastName: e.target.value})}
-                      />
-                    </div>
-                    <div>
+                    <Label className="text-[#8c7e6d] text-xs">Email Address</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <Input 
                         type="email"
-                        placeholder="Email Address*"
+                        placeholder="email@example.com"
+                        className="pl-10 h-12 border-slate-200 rounded-xl focus-visible:ring-[#3a322b]"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
                         required
-                        className="h-12 bg-[#fdfbf7] border-[#ece4d5] focus-visible:ring-[#9c27b0]"
-                        value={profileData.email}
-                        onChange={(e) => setProfileData({...profileData, email: e.target.value})}
                       />
-                    </div>
-                    <div>
-                      <Input 
-                        type="text"
-                        placeholder="Screen Name (optional)"
-                        className="h-12 bg-[#fdfbf7] border-[#ece4d5] focus-visible:ring-[#9c27b0]"
-                        value={profileData.screenName}
-                        onChange={(e) => setProfileData({...profileData, screenName: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Input 
-                        type="date"
-                        placeholder="Date of birth (optional)"
-                        className="h-12 bg-[#fdfbf7] border-[#ece4d5] focus-visible:ring-[#9c27b0]"
-                        value={profileData.dob}
-                        onChange={(e) => setProfileData({...profileData, dob: e.target.value})}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2 pt-2">
-                      <Label className="text-[#8c7e6d] text-xs">Gender (optional)</Label>
-                      <div className="flex gap-3">
-                        {['Female', 'Male', 'Other'].map((g) => (
-                          <button
-                            key={g}
-                            type="button"
-                            onClick={() => setProfileData({...profileData, gender: g})}
-                            className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${
-                              profileData.gender === g 
-                                ? 'border-[#3a322b] bg-[#3a322b] text-white' 
-                                : 'border-[#ece4d5] text-[#4a3f35] hover:border-[#3a322b]'
-                            }`}
-                          >
-                            {g}
-                          </button>
-                        ))}
-                      </div>
                     </div>
                   </div>
-
-                  <div className="text-xs text-[#8c7e6d] text-center">
-                    By Signing Up, I agree to <a href="#" className="text-[#9c27b0]">Terms & Conditions</a> and <a href="#" className="text-[#9c27b0]">Privacy Policy</a>
+                  <div className="space-y-2">
+                    <Label className="text-[#8c7e6d] text-xs">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Input 
+                        type="password"
+                        placeholder="••••••••"
+                        className="pl-10 h-12 border-slate-200 rounded-xl focus-visible:ring-[#3a322b]"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
-
                   <Button 
                     type="submit"
-                    disabled={isLoading || !profileData.firstName || !profileData.lastName || !profileData.email}
-                    className="w-full bg-[#3a322b] hover:bg-[#4a3f35] h-12 rounded-md text-base font-bold text-white transition-all"
+                    disabled={isLoading}
+                    className="w-full bg-[#3a322b] hover:bg-[#4a3f35] h-12 rounded-xl text-base font-bold text-white transition-all"
                   >
-                    {isLoading ? "Sending OTP..." : "Continue"}
+                    {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
+
+                <div className="relative my-8">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-100"></div>
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-slate-400">Or continue with</span>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleGoogleLogin}
+                  variant="outline"
+                  className="w-full h-12 rounded-xl border-slate-200 flex items-center justify-center gap-2 hover:bg-slate-50"
+                >
+                  <Chrome className="w-5 h-5" />
+                  Google
+                </Button>
+
+                <p className="text-center text-sm text-slate-500 mt-6">
+                  Don't have an account?{" "}
+                  <button 
+                    onClick={() => setMode('register')}
+                    className="text-[#3a322b] font-bold hover:underline"
+                  >
+                    Create one
+                  </button>
+                </p>
               </motion.div>
             )}
 
-            {step === 'otp' && (
+            {mode === 'register' && (
               <motion.div
-                key="otp-step"
-                initial={{ opacity: 0, x: -20 }}
+                key="register"
+                initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
+                exit={{ opacity: 0, x: -20 }}
                 className="space-y-6"
               >
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-[#3a322b] mb-1">Join KALAA</h2>
-                  <p className="text-[#8c7e6d] text-sm">
-                    Please enter OTP sent to 91{phoneNumber}
-                  </p>
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-bold text-[#3a322b]">Create Account</h2>
+                  <p className="text-[#8c7e6d] text-sm">Step {regStep} of 3</p>
                 </div>
 
-                <form onSubmit={handleVerifyOtp} className="space-y-6">
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <Input 
-                        type="text"
-                        placeholder="OTP"
-                        className="h-14 bg-[#fdfbf7] border-[#ece4d5] text-xl tracking-widest font-mono pl-4 pr-24"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                        maxLength={6}
-                      />
-                      <button 
-                        type="button"
-                        onClick={() => handleSendOtp(`+91${phoneNumber}`, channel)}
-                        disabled={isLoading}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-[#9c27b0] hover:text-[#7b1fa2] disabled:opacity-50"
-                      >
-                        Resend OTP
-                      </button>
-                    </div>
-                    <p className="text-xs text-[#8c7e6d] mt-2">Expires in 5:00</p>
-                  </div>
+                <form onSubmit={handleRegister} className="space-y-4">
+                  {regStep === 1 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[#8c7e6d] text-xs">First Name</Label>
+                          <Input 
+                            placeholder="John"
+                            className="h-12 border-slate-200 rounded-xl"
+                            value={regData.firstName}
+                            onChange={(e) => setRegData({...regData, firstName: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[#8c7e6d] text-xs">Last Name</Label>
+                          <Input 
+                            placeholder="Doe"
+                            className="h-12 border-slate-200 rounded-xl"
+                            value={regData.lastName}
+                            onChange={(e) => setRegData({...regData, lastName: e.target.value})}
+                            required
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[#8c7e6d] text-xs">Age</Label>
+                          <Input 
+                            type="number"
+                            placeholder="25"
+                            className="h-12 border-slate-200 rounded-xl"
+                            value={regData.age}
+                            onChange={(e) => setRegData({...regData, age: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[#8c7e6d] text-xs">Mobile</Label>
+                          <Input 
+                            placeholder="9876543210"
+                            className="h-12 border-slate-200 rounded-xl"
+                            value={regData.mobile}
+                            onChange={(e) => setRegData({...regData, mobile: e.target.value})}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
 
-                  <Button 
-                    type="submit"
-                    disabled={isLoading || otp.length < 6}
-                    className="w-full bg-[#3a322b] hover:bg-[#4a3f35] h-12 rounded-md text-base font-bold text-white transition-all"
-                  >
-                    {isLoading ? "Verifying..." : "Start Shopping"}
-                  </Button>
+                  {regStep === 2 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-[#8c7e6d] text-xs">Flat No / Building</Label>
+                        <Input 
+                          placeholder="A-101, Sunshine Apt"
+                          className="h-12 border-slate-200 rounded-xl"
+                          value={regData.address.flatNo}
+                          onChange={(e) => setRegData({...regData, address: {...regData.address, flatNo: e.target.value}})}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[#8c7e6d] text-xs">Locality / Area</Label>
+                        <Input 
+                          placeholder="Andheri West"
+                          className="h-12 border-slate-200 rounded-xl"
+                          value={regData.address.locality}
+                          onChange={(e) => setRegData({...regData, address: {...regData.address, locality: e.target.value}})}
+                          required
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[#8c7e6d] text-xs">City</Label>
+                          <Input 
+                            placeholder="Mumbai"
+                            className="h-12 border-slate-200 rounded-xl"
+                            value={regData.address.city}
+                            onChange={(e) => setRegData({...regData, address: {...regData.address, city: e.target.value}})}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[#8c7e6d] text-xs">Pincode</Label>
+                          <Input 
+                            placeholder="400001"
+                            className="h-12 border-slate-200 rounded-xl"
+                            value={regData.address.pincode}
+                            onChange={(e) => setRegData({...regData, address: {...regData.address, pincode: e.target.value}})}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {regStep === 3 && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-[#8c7e6d] text-xs">Email Address</Label>
+                        <Input 
+                          type="email"
+                          placeholder="email@example.com"
+                          className="h-12 border-slate-200 rounded-xl"
+                          value={regData.email}
+                          onChange={(e) => setRegData({...regData, email: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[#8c7e6d] text-xs">Create Password</Label>
+                        <Input 
+                          type="password"
+                          placeholder="••••••••"
+                          className="h-12 border-slate-200 rounded-xl"
+                          value={regData.password}
+                          onChange={(e) => setRegData({...regData, password: e.target.value})}
+                          required
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+
+                  <div className="flex gap-3 pt-4">
+                    {regStep > 1 && (
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        onClick={() => setRegStep(regStep - 1)}
+                        className="flex-1 h-12 rounded-xl border-slate-200"
+                      >
+                        Back
+                      </Button>
+                    )}
+                    <Button 
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex-[2] bg-[#3a322b] hover:bg-[#4a3f35] h-12 rounded-xl text-base font-bold text-white transition-all"
+                    >
+                      {isLoading ? "Processing..." : regStep < 3 ? "Next" : "Create Account"}
+                    </Button>
+                  </div>
                 </form>
+
+                <p className="text-center text-sm text-slate-500 mt-6">
+                  Already have an account?{" "}
+                  <button 
+                    onClick={() => setMode('login')}
+                    className="text-[#3a322b] font-bold hover:underline"
+                  >
+                    Sign In
+                  </button>
+                </p>
+              </motion.div>
+            )}
+
+            {mode === 'verify' && (
+              <motion.div
+                key="verify"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center space-y-6"
+              >
+                <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Mail className="w-10 h-10 text-green-500" />
+                </div>
+                <h2 className="text-2xl font-bold text-[#3a322b]">Verify Your Email</h2>
+                <p className="text-slate-500 leading-relaxed">
+                  We've sent a verification link to your email. Please click the link to activate your account.
+                </p>
+                <div className="pt-4 space-y-3">
+                  <Button 
+                    onClick={() => window.location.reload()}
+                    className="w-full bg-[#3a322b] hover:bg-[#4a3f35] h-12 rounded-xl text-white font-bold"
+                  >
+                    I've Verified
+                  </Button>
+                  <Button 
+                    variant="ghost"
+                    onClick={async () => {
+                      await dataService.sendVerification();
+                      toast.success("Verification email resent!");
+                    }}
+                    className="w-full h-12 rounded-xl text-slate-400"
+                  >
+                    Resend Email
+                  </Button>
+                </div>
+                <button 
+                  onClick={() => setMode('login')}
+                  className="text-sm text-slate-400 hover:text-[#3a322b] underline"
+                >
+                  Back to Login
+                </button>
               </motion.div>
             )}
           </AnimatePresence>

@@ -39,10 +39,7 @@ export default function ShopHome() {
   const [profileForm, setProfileForm] = useState({ 
     firstName: "", 
     lastName: "", 
-    screenName: "", 
-    email: "", 
-    dob: "", 
-    gender: "" 
+    mobile: ""
   });
   const [newAddressForm, setNewAddressForm] = useState<Partial<Address>>({
     type: 'Home',
@@ -63,10 +60,7 @@ export default function ShopHome() {
         setProfileForm({ 
           firstName: updatedUser.firstName || updatedUser.name?.split(' ')[0] || "", 
           lastName: updatedUser.lastName || updatedUser.name?.split(' ').slice(1).join(' ') || "", 
-          screenName: updatedUser.screenName || updatedUser.name || "",
-          email: updatedUser.email || "",
-          dob: updatedUser.dob || "",
-          gender: updatedUser.gender || ""
+          mobile: updatedUser.mobile || ""
         });
       } else {
         setUserOrders([]);
@@ -107,10 +101,7 @@ export default function ShopHome() {
       ...user,
       firstName: profileForm.firstName,
       lastName: profileForm.lastName,
-      screenName: profileForm.screenName,
-      email: profileForm.email,
-      dob: profileForm.dob,
-      gender: profileForm.gender,
+      mobile: profileForm.mobile,
       name: `${profileForm.firstName} ${profileForm.lastName}`.trim()
     };
     await dataService.updateUser(updated);
@@ -546,58 +537,19 @@ export default function ShopHome() {
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-[#8c7e6d] text-xs">Screen Name*</Label>
+                              <Label className="text-[#8c7e6d] text-xs">Mobile Number*</Label>
                               <Input 
-                                value={profileForm.screenName}
-                                onChange={(e) => setProfileForm(prev => ({ ...prev, screenName: e.target.value }))}
+                                value={profileForm.mobile}
+                                onChange={(e) => setProfileForm(prev => ({ ...prev, mobile: e.target.value }))}
                                 className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
                                 required
                               />
                             </div>
                           </div>
 
-                          <div className="pt-6 border-t border-[#ece4d5] space-y-1">
-                            <Label className="text-[#8c7e6d] text-xs">Email Address*</Label>
-                            <div className="flex justify-between items-end border-b border-[#ece4d5] pb-1">
-                              <Input 
-                                value={profileForm.email}
-                                onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
-                                className="border-0 rounded-none px-0 h-auto py-1 focus-visible:ring-0"
-                                required
-                              />
-                              <button type="button" className="text-[#008296] text-sm font-medium whitespace-nowrap mb-1">Change</button>
-                            </div>
-                          </div>
-
-                          <div className="bg-[#f8f9fa] p-4 rounded-xl space-y-6">
-                            <div className="space-y-1">
-                              <Label className="text-[#8c7e6d] text-xs">Date of birth</Label>
-                              <Input 
-                                type="date"
-                                value={profileForm.dob}
-                                onChange={(e) => setProfileForm(prev => ({ ...prev, dob: e.target.value }))}
-                                className="border-0 border-b border-[#ece4d5] bg-transparent rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                              />
-                            </div>
-                            
-                            <div>
-                              <Label className="text-[#8c7e6d] text-xs mb-3 block">Gender</Label>
-                              <div className="flex gap-8">
-                                {['Female', 'Male'].map(gender => (
-                                  <label key={gender} className="flex items-center gap-3 cursor-pointer">
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${profileForm.gender === gender ? 'border-[#1a1a1a]' : 'border-[#8c7e6d]'}`}>
-                                      {profileForm.gender === gender && <div className="w-2.5 h-2.5 bg-[#1a1a1a] rounded-full" />}
-                                    </div>
-                                    <span className="text-[#3a322b]">{gender}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-
                           <div className="flex gap-4 pt-4">
-                            <Button type="button" variant="outline" className="flex-1 h-12 rounded-lg font-bold border-[#ece4d5]">
-                              Reset
+                            <Button type="button" variant="outline" onClick={() => setAccountView("menu")} className="flex-1 h-12 rounded-lg font-bold border-[#ece4d5]">
+                              Cancel
                             </Button>
                             <Button type="submit" className="flex-1 h-12 bg-[#1a1a1a] text-white rounded-lg font-bold">
                               Update

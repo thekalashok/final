@@ -81,8 +81,8 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 1024 * 1024) { // 1MB limit for base64
-        alert("File is too large. Please choose an image under 1MB.");
+      if (file.size > 500 * 1024) { // 500KB limit for base64 to stay under Firestore 1MB doc limit
+        alert("File is too large. Please choose an image under 500KB.");
         return;
       }
       const reader = new FileReader();
