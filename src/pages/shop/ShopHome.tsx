@@ -199,9 +199,10 @@ export default function ShopHome() {
       return;
     }
 
+    const orderNumber = `ORD-${Date.now()}`;
     const newOrder: Order = {
-      id: Math.random().toString(36).substr(2, 9),
-      order_number: `ORD-${Date.now()}`,
+      id: orderNumber,
+      order_number: orderNumber,
       customer_name: customerInfo.name,
       customer_phone: customerInfo.phone,
       customer_address: customerInfo.address,
@@ -220,7 +221,7 @@ export default function ShopHome() {
     setCart([]);
     setIsCheckoutOpen(false);
     setCustomerInfo({ name: "", phone: "", address: "" });
-    toast.success("Order placed successfully! We will contact you soon.");
+    toast.success(`Order placed successfully! Your order number is ${newOrder.order_number}`);
   };
 
   return (
@@ -291,6 +292,13 @@ export default function ShopHome() {
                                 className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors"
                               >
                                 <span className="text-[#3a322b]">Orders</span>
+                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
+                              </button>
+                              <button 
+                                onClick={() => navigate("/track-order")}
+                                className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors"
+                              >
+                                <span className="text-[#3a322b]">Track Order</span>
                                 <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
                               </button>
                               <button className="w-full flex items-center justify-between p-4 hover:bg-[#fdfbf7] transition-colors">
@@ -786,6 +794,7 @@ export default function ShopHome() {
           <div className="flex flex-wrap justify-center gap-8 text-sm font-medium text-[#8c7e6d]">
             <a href="#" className="hover:text-[#3a322b] transition-colors">Shop</a>
             <a href="#" className="hover:text-[#3a322b] transition-colors">About Us</a>
+            <a href="/track-order" className="hover:text-[#3a322b] transition-colors">Track Order</a>
             <a href="#" className="hover:text-[#3a322b] transition-colors">Contact</a>
           </div>
           

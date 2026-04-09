@@ -106,11 +106,16 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      await dataService.loginWithGoogle();
-      // Redirection happens, so we don't need to do anything else here
+      const user = await dataService.loginWithGoogle();
+      setIsLoading(false);
+      if (user) {
+        toast.success("Logged in with Google!");
+        setTimeout(() => navigate("/"), 1000);
+      }
     } catch (error: any) {
       setIsLoading(false);
-      toast.error("Google login failed.");
+      console.error("Google login error:", error);
+      toast.error(`Google login failed: ${error.message || "Unknown error"}`);
     }
   };
 

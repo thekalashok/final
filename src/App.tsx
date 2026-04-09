@@ -7,6 +7,7 @@ import Products from "./pages/Products";
 import Billing from "./pages/Billing";
 import Orders from "./pages/Orders";
 import Customers from "./pages/Customers";
+import TrackOrder from "./pages/TrackOrder";
 import AppLayout from "./components/layout/AppLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/shop" element={<ShopHome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/track-order" element={<TrackOrder />} />
 
           {/* Admin Routes (Login required) */}
           <Route path="/admin" element={<ProtectedRoute />}>

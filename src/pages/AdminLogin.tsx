@@ -47,10 +47,22 @@ export default function AdminLogin() {
             onClick={async () => {
               setIsLoading(true);
               try {
-                await dataService.loginWithGoogle();
-                // Redirection happens
-              } catch (error) {
-                toast.error("An error occurred during Google login");
+                const user = await dataService.loginWithGoogle();
+                if (user) {
+                  if (user.role === 'admin' || user.email === "rajukumbhar2323@gmail.com") {
+                    toast.success("Welcome back, Admin!");
+                    navigate("/admin");
+                  } else {
+                    toast.error("You do not have admin privileges.");
+                    await dataService.logout();
+                  }
+                } else {
+                  toast.error("Google login failed");
+                }
+              } catch (error: any) {
+                console.error("Login catch block error:", error);
+                toast.error(`Google login failed: ${error.message || "Unknown error"}`);
+              } finally {
                 setIsLoading(false);
               }
             }}
