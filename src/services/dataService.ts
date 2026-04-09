@@ -57,8 +57,11 @@ interface FirestoreErrorInfo {
 }
 
 function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const isQuotaError = errorMessage.includes('Quota exceeded') || errorMessage.includes('quota-exceeded');
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMessage,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -75,7 +78,15 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   }
+  
   console.error('Firestore Error: ', JSON.stringify(errInfo));
+  
+  if (isQuotaError) {
+    console.warn("Firestore Quota Exceeded. The app will continue using cached data.");
+    // Don't throw for quota errors to prevent app crashes, just notify the user via a custom event or log
+    return; 
+  }
+
   throw new Error(JSON.stringify(errInfo));
 }
 
@@ -87,22 +98,61 @@ const COLLECTIONS = {
   USERS: "users",
 };
 
+// Simple in-memory and localStorage cache for instant loading
+const cache: Record<string, any> = {};
+try {
+  const savedCache = localStorage.getItem('kalaa_data_cache');
+  if (savedCache) {
+    const parsed = JSON.parse(savedCache);
+    // Only cache non-sensitive collections
+    if (parsed.PRODUCTS) cache.PRODUCTS = parsed.PRODUCTS;
+    if (parsed.CATEGORIES) cache.CATEGORIES = parsed.CATEGORIES;
+  }
+} catch (e) {
+  console.warn("Cache initialization failed", e);
+}
+
 type Listener = (data: any) => void;
 
 export const dataService = {
   // Subscription
   subscribe: (key: keyof typeof COLLECTIONS, callback: Listener) => {
     const path = COLLECTIONS[key];
+
+    // Immediately return cached data if it exists for instant UI
+    if (cache[key]) {
+      callback(cache[key]);
+    }
+
     const q = query(collection(db, path));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      
+      // Update cache
+      if (key === 'PRODUCTS' || key === 'CATEGORIES') {
+        cache[key] = data;
+        try {
+          localStorage.setItem('kalaa_data_cache', JSON.stringify(cache));
+        } catch (e) {}
+      }
+      
       callback(data);
     }, (error) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('Quota exceeded') || errorMessage.includes('quota-exceeded')) {
+        console.warn(`Quota exceeded for ${path}. Using cached data.`);
+        // If we have cached data, we've already called the callback with it in subscribe()
+        return;
+      }
       handleFirestoreError(error, OperationType.LIST, path);
     });
 
     return unsubscribe;
+  },
+
+  getCachedData: (key: keyof typeof COLLECTIONS) => {
+    return cache[key] || null;
   },
 
   // Auth & Users
