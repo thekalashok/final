@@ -14,19 +14,6 @@ export default function Dashboard() {
   const [customers, setCustomers] = useState<Customer[]>([]);
 
   useEffect(() => {
-    const loadData = async () => {
-      const [initialOrders, initialProducts, initialCustomers] = await Promise.all([
-        dataService.getOrders(),
-        dataService.getProducts(),
-        dataService.getCustomers()
-      ]);
-      setOrders(initialOrders);
-      setProducts(initialProducts);
-      setCustomers(initialCustomers);
-    };
-
-    loadData();
-
     const unsubscribeOrders = dataService.subscribe("ORDERS", (newOrders) => {
       setOrders(newOrders);
     });

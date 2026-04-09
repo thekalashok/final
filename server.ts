@@ -1,5 +1,4 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import twilio from "twilio";
 import { initializeApp, cert, getApps } from "firebase-admin/app";
@@ -89,28 +88,36 @@ app.post("/api/auth/send-otp", async (req, res) => {
     }
 
     if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-      const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-      
-      if (channel === 'whatsapp') {
-        if (!process.env.TWILIO_WHATSAPP_NUMBER) {
-          return res.status(400).json({ error: "Twilio WhatsApp number not configured" });
+      try {
+        const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+        
+        if (channel === 'whatsapp') {
+          if (!process.env.TWILIO_WHATSAPP_NUMBER) {
+            return res.status(400).json({ error: "Twilio WhatsApp number not configured" });
+          }
+          await client.messages.create({
+            body: `Your KALAA login code is ${otp}`,
+            from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+            to: `whatsapp:${phoneNumber}`
+          });
+        } else {
+          if (!process.env.TWILIO_PHONE_NUMBER) {
+            return res.status(400).json({ error: "Twilio SMS number not configured" });
+          }
+          await client.messages.create({
+            body: `Your KALAA login code is ${otp}`,
+            from: process.env.TWILIO_PHONE_NUMBER,
+            to: phoneNumber
+          });
         }
-        await client.messages.create({
-          body: `Your KALAA login code is ${otp}`,
-          from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-          to: `whatsapp:${phoneNumber}`
-        });
-      } else {
-        if (!process.env.TWILIO_PHONE_NUMBER) {
-          return res.status(400).json({ error: "Twilio SMS number not configured" });
+        console.log(`Sent OTP via ${channel} to ${phoneNumber}`);
+      } catch (twilioError: any) {
+        console.error("Twilio API Error:", twilioError);
+        if (twilioError.code === 20003) {
+          return res.status(500).json({ error: "Twilio Authentication Failed. Please check your TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in the Secrets panel." });
         }
-        await client.messages.create({
-          body: `Your KALAA login code is ${otp}`,
-          from: process.env.TWILIO_PHONE_NUMBER,
-          to: phoneNumber
-        });
+        throw twilioError;
       }
-      console.log(`Sent OTP via ${channel} to ${phoneNumber}`);
     } else {
       // Fallback for development if Twilio is not configured
       console.log(`[DEV MODE] Twilio not configured. OTP for ${phoneNumber} is ${otp} (Channel: ${channel})`);
@@ -177,8 +184,11 @@ app.post("/api/auth/verify-otp", async (req, res) => {
   }
 });
 
+export { app };
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -197,4 +207,7 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only start the server if this file is run directly
+if (process.env.NODE_ENV !== "production" || process.env.RUN_SERVER === "true") {
+  startServer();
+}

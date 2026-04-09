@@ -26,18 +26,12 @@ export default function Orders() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   useEffect(() => {
-    loadOrders();
     // Subscribe to live updates
     const unsubscribe = dataService.subscribe("ORDERS", (newOrders) => {
       setOrders(newOrders.sort((a: Order, b: Order) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime()));
     });
     return () => unsubscribe();
   }, []);
-
-  const loadOrders = async () => {
-    const initialOrders = await dataService.getOrders();
-    setOrders(initialOrders.sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime()));
-  };
 
   const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
     const order = orders.find(o => o.id === orderId);

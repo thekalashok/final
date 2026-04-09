@@ -54,38 +54,6 @@ export default function ShopHome() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    const loadInitialData = async () => {
-      const initialProducts = await dataService.getProducts();
-      setProducts(initialProducts.filter(p => p.status === "active"));
-      
-      const dynamicCats = await dataService.getCategories();
-      setCategories([
-        { id: "all", label: "All" },
-        ...dynamicCats
-          .filter(cat => typeof cat === 'string' && cat.length > 0)
-          .map(cat => ({ id: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }))
-      ]);
-      
-      const currentUser = dataService.getCurrentUser();
-      setUser(currentUser);
-      if (currentUser) {
-        // Wait for onAuthChange to get the full user doc with mobile, or use uid as fallback since uid is phone number for phone auth
-        const identifier = currentUser.mobile || currentUser.email || currentUser.id;
-        const orders = await dataService.getUserOrders(identifier);
-        setUserOrders(orders);
-        setProfileForm({ 
-          firstName: currentUser.firstName || currentUser.name?.split(' ')[0] || "", 
-          lastName: currentUser.lastName || currentUser.name?.split(' ').slice(1).join(' ') || "", 
-          screenName: currentUser.screenName || currentUser.name || "",
-          email: currentUser.email || "",
-          dob: currentUser.dob || "",
-          gender: currentUser.gender || ""
-        });
-      }
-    };
-
-    loadInitialData();
-
     const unsubscribeAuth = dataService.onAuthChange(async (updatedUser) => {
       setUser(updatedUser);
       if (updatedUser) {

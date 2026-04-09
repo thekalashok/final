@@ -17,17 +17,6 @@ export default function Customers() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
-    const loadData = async () => {
-      const [initialCustomers, initialOrders] = await Promise.all([
-        dataService.getCustomers(),
-        dataService.getOrders()
-      ]);
-      setCustomers(initialCustomers);
-      setOrders(initialOrders);
-    };
-
-    loadData();
-
     const unsubscribeCustomers = dataService.subscribe("CUSTOMERS", (newCustomers) => {
       setCustomers(newCustomers);
     });

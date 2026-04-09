@@ -17,7 +17,6 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    loadProducts();
     // Subscribe to live updates
     const unsubscribe = dataService.subscribe("PRODUCTS", (newProducts) => {
       setProducts(newProducts);
