@@ -205,7 +205,6 @@ router.post("/auth/verify-otp", async (req, res) => {
 
 // Mount the router at multiple possible base paths for compatibility
 app.use("/api", router);
-app.use("/.netlify/functions/api", router);
 app.use("/", router);
 
 export { app };
