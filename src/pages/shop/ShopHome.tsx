@@ -16,10 +16,7 @@ import { toast } from "sonner";
 import { Toaster } from "../../components/ui/sonner";
 
 export default function ShopHome() {
-  const [products, setProducts] = useState<Product[]>(() => {
-    const cached = dataService.getCachedData("PRODUCTS");
-    return cached ? cached.filter((p: any) => p.status === "active") : [];
-  });
+  const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<LineItem[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
@@ -51,19 +48,7 @@ export default function ShopHome() {
     type: 'Home',
     isDefault: false
   });
-  const [categories, setCategories] = useState<{ id: string; label: string }[]>(() => {
-    const cached = dataService.getCachedData("CATEGORIES");
-    if (cached) {
-      return [
-        { id: "all", label: "All" },
-        ...cached
-          .map((doc: any) => doc.name)
-          .filter((cat: any) => typeof cat === 'string' && cat.length > 0)
-          .map((cat: string) => ({ id: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }))
-      ];
-    }
-    return [{ id: "all", label: "All" }];
-  });
+  const [categories, setCategories] = useState<{ id: string; label: string }[]>([]);
   const navigate = useNavigate();
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
