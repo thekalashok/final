@@ -225,7 +225,16 @@ export const dataService = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber, otp })
       });
-      const data = await response.json();
+      
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.error("Non-JSON response during verification:", text);
+        throw new Error(`Server Error (${response.status}): ${text.slice(0, 100)}`);
+      }
       
       if (!data.success || !data.token) {
         throw new Error(data.error || "Verification failed");

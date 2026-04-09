@@ -119,6 +119,11 @@ router.post("/auth/send-otp", async (req, res) => {
         if (twilioError.code === 20003) {
           return res.status(500).json({ error: "Twilio Authentication Failed. Please check your TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in the Netlify Environment Variables." });
         }
+        if (twilioError.code === 21608) {
+          return res.status(400).json({ 
+            error: `Twilio Trial Account Error: The number ${phoneNumber} is not verified. Please verify it at https://www.twilio.com/console/phone-numbers/verified or upgrade your Twilio account.` 
+          });
+        }
         throw twilioError;
       }
     } else {
@@ -187,10 +192,10 @@ router.post("/auth/verify-otp", async (req, res) => {
   }
 });
 
-// Mount the router
+// Mount the router at multiple possible base paths for compatibility
 app.use("/api", router);
-// Also mount at root for Netlify function compatibility if needed
 app.use("/.netlify/functions/api", router);
+app.use("/", router);
 
 export { app };
 

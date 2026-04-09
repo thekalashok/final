@@ -67,7 +67,19 @@ export default function Login() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber: fullPhoneNumber, channel: selectedChannel })
       });
-      const data = await response.json();
+      
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.error("Non-JSON response:", text);
+        toast.error(`Server Error (${response.status}): ${text.slice(0, 100)}`);
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(false);
       
       if (data.success) {
