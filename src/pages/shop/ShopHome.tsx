@@ -289,12 +289,12 @@ export default function ShopHome() {
 
       {/* Product Detail Modal */}
       <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
-        <DialogContent className="max-w-6xl w-full h-full md:h-[85vh] p-0 overflow-y-auto md:overflow-hidden md:rounded-[2.5rem] border-none bg-[#fdfbf7] m-0 rounded-none shadow-2xl scrollbar-hide">
-          <div className="flex flex-col md:flex-row md:h-full">
-            {/* Left side: Images */}
-            <div className="w-full md:w-[55%] h-auto md:h-full bg-white relative flex flex-col">
+        <DialogContent className="max-w-6xl w-full h-full md:h-[85vh] p-0 overflow-hidden md:rounded-[2.5rem] border-none bg-[#fdfbf7] m-0 rounded-none shadow-2xl">
+          <div className="flex flex-col md:flex-row h-full overflow-hidden">
+            {/* Left side: Images - Fixed on desktop, scrollable on mobile */}
+            <div className="w-full md:w-[55%] h-[50vh] md:h-full bg-white relative flex flex-col">
               {/* Mobile Back Button */}
-              <div className="md:hidden sticky top-4 left-4 z-30 h-0">
+              <div className="md:hidden absolute top-4 left-4 z-30">
                 <button 
                   onClick={() => setSelectedProduct(null)}
                   className="bg-white/90 backdrop-blur-md p-2 rounded-full shadow-lg text-[#3a322b]"
@@ -303,15 +303,15 @@ export default function ShopHome() {
                 </button>
               </div>
 
-              <div className="flex-1 relative overflow-hidden group min-h-[50vh] md:min-h-0">
-                <div id="modal-image-container" className="flex w-full h-auto md:h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="flex-1 relative overflow-hidden group">
+                <div id="modal-image-container" className="flex w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {selectedProduct?.image_urls && selectedProduct.image_urls.length > 0 ? (
                     selectedProduct.image_urls.map((url, idx) => (
-                      <div key={idx} className="w-full h-auto md:h-full flex-shrink-0 snap-center relative">
+                      <div key={idx} className="w-full h-full flex-shrink-0 snap-center relative">
                         <img 
                           src={url} 
                           alt={`${selectedProduct.name} - ${idx + 1}`} 
-                          className="w-full h-auto md:h-full md:object-cover"
+                          className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
                       </div>
@@ -380,8 +380,8 @@ export default function ShopHome() {
               )}
             </div>
 
-            {/* Right side: Details */}
-            <div className="w-full md:w-[45%] h-auto md:h-full md:overflow-y-auto bg-[#fdfbf7] flex flex-col">
+            {/* Right side: Details - Scrollable */}
+            <div className="w-full md:w-[45%] h-full overflow-y-auto bg-[#fdfbf7] flex flex-col">
               {/* Desktop Back Button */}
               <div className="hidden md:flex sticky top-0 z-20 bg-[#fdfbf7]/80 backdrop-blur-md px-8 py-6 border-b border-[#ece4d5] items-center justify-between">
                 <button 
