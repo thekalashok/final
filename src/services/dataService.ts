@@ -199,7 +199,7 @@ export const dataService = {
       return cachedData.data;
     }
     if (path === COLLECTIONS.PRODUCTS) {
-      return FALLBACK_PRODUCTS;
+      return [];
     }
     if (path === COLLECTIONS.CATEGORIES) {
       return [{ name: "amigurumi" }, { name: "bags" }, { name: "clothing" }, { name: "accessories" }, { name: "home_decor" }, { name: "custom" }, { name: "other" }];
@@ -264,7 +264,7 @@ export const dataService = {
             if (path === COLLECTIONS.CATEGORIES) {
               callback(["amigurumi", "bags", "clothing", "accessories", "home_decor", "custom", "other"]);
             } else if (path === COLLECTIONS.PRODUCTS) {
-              callback(FALLBACK_PRODUCTS);
+              callback([]);
             } else {
               callback([]);
             }
