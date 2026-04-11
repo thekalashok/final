@@ -134,215 +134,217 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
-        <DialogHeader className="p-8 pb-0">
+      <DialogContent className="sm:max-w-2xl rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl max-h-[95vh] flex flex-col">
+        <DialogHeader className="p-8 pb-4 flex-shrink-0">
           <DialogTitle className="text-2xl font-bold font-display text-[#3a322b]">
             {product ? "Edit Product" : "New Creation"}
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="p-8 pt-6 space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Product Name</Label>
-              <Input 
-                id="name" 
-                value={formData.name} 
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
-                placeholder="e.g. Blue Crochet Bag"
-                required 
-              />
-            </div>
-            
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="description" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Description</Label>
-              <textarea 
-                id="description" 
-                value={formData.description} 
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full min-h-[100px] p-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                placeholder="Briefly describe your craft..."
-                required 
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-8 pt-2 space-y-6 scrollbar-hide">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Product Name</Label>
+                <Input 
+                  id="name" 
+                  value={formData.name} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
+                  placeholder="e.g. Blue Crochet Bag"
+                  required 
+                />
+              </div>
+              
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="description" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Description</Label>
+                <textarea 
+                  id="description" 
+                  value={formData.description} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full min-h-[120px] p-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 text-sm"
+                  placeholder="Briefly describe your craft..."
+                  required 
+                />
+              </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="category" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Category</Label>
-              <Select 
-                value={formData.category} 
-                onValueChange={(val: ProductCategory) => setFormData(prev => ({ ...prev, category: val }))}
-              >
-                <SelectTrigger className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:ring-brand-500">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat} className="capitalize py-3">{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="category" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Category</Label>
+                <Select 
+                  value={formData.category} 
+                  onValueChange={(val: ProductCategory) => setFormData(prev => ({ ...prev, category: val }))}
+                >
+                  <SelectTrigger className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:ring-brand-500">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat} className="capitalize py-3">{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="status" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Status</Label>
-              <Select 
-                value={formData.status} 
-                onValueChange={(val: ProductStatus) => setFormData(prev => ({ ...prev, status: val }))}
-              >
-                <SelectTrigger className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:ring-brand-500">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
-                  {statuses.map(status => (
-                    <SelectItem key={status} value={status} className="capitalize py-3">{status.replace("_", " ")}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="status" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Status</Label>
+                <Select 
+                  value={formData.status} 
+                  onValueChange={(val: ProductStatus) => setFormData(prev => ({ ...prev, status: val }))}
+                >
+                  <SelectTrigger className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:ring-brand-500">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
+                    {statuses.map(status => (
+                      <SelectItem key={status} value={status} className="capitalize py-3">{status.replace("_", " ")}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="price" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Selling Price (₹)</Label>
-              <Input 
-                id="price" 
-                type="number" 
-                value={formData.price} 
-                onChange={(e) => setFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
-                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
-                required 
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="price" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Selling Price (₹)</Label>
+                <Input 
+                  id="price" 
+                  type="number" 
+                  value={formData.price} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
+                  className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
+                  required 
+                />
+              </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="cost_price" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Cost Price (₹)</Label>
-              <Input 
-                id="cost_price" 
-                type="number" 
-                value={formData.cost_price} 
-                onChange={(e) => setFormData(prev => ({ ...prev, cost_price: Number(e.target.value) }))}
-                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
-                required 
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="cost_price" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Cost Price (₹)</Label>
+                <Input 
+                  id="cost_price" 
+                  type="number" 
+                  value={formData.cost_price} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, cost_price: Number(e.target.value) }))}
+                  className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
+                  required 
+                />
+              </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="stock" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Stock Quantity</Label>
-              <Input 
-                id="stock" 
-                type="number" 
-                value={formData.stock} 
-                onChange={(e) => setFormData(prev => ({ ...prev, stock: Number(e.target.value) }))}
-                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
-                required 
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="stock" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Stock Quantity</Label>
+                <Input 
+                  id="stock" 
+                  type="number" 
+                  value={formData.stock} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, stock: Number(e.target.value) }))}
+                  className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
+                  required 
+                />
+              </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="sku" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">SKU / Product Code</Label>
-              <Input 
-                id="sku" 
-                value={formData.sku} 
-                onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="sku" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">SKU / Product Code</Label>
+                <Input 
+                  id="sku" 
+                  value={formData.sku} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
+                  className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
+                />
+              </div>
 
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="shipping_info" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Shipping Info</Label>
-              <textarea 
-                id="shipping_info" 
-                value={formData.shipping_info || ""} 
-                onChange={(e) => setFormData(prev => ({ ...prev, shipping_info: e.target.value }))}
-                className="w-full min-h-[80px] p-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                placeholder="e.g. Each piece is made to order and takes 5-6 days to prepare."
-              />
-            </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="shipping_info" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Shipping Info</Label>
+                <textarea 
+                  id="shipping_info" 
+                  value={formData.shipping_info || ""} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, shipping_info: e.target.value }))}
+                  className="w-full min-h-[100px] p-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 text-sm"
+                  placeholder="e.g. Each piece is made to order and takes 5-6 days to prepare."
+                />
+              </div>
 
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="image_url" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Product Images</Label>
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-wrap gap-3">
-                  {(formData.image_urls && formData.image_urls.length > 0 ? formData.image_urls : (formData.image_url ? [formData.image_url] : [])).map((url, idx) => (
-                    <div key={idx} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-slate-100 group shadow-sm">
-                      <img 
-                        src={url} 
-                        alt={`Preview ${idx + 1}`} 
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(idx)}
-                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="flex gap-2">
-                  <div className="flex-grow">
-                    <Input 
-                      id="image_url" 
-                      value={imageUrlInput} 
-                      onChange={(e) => setImageUrlInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          if (imageUrlInput) {
-                            setFormData(prev => ({
-                              ...prev,
-                              image_urls: [...(prev.image_urls || []), imageUrlInput],
-                              image_url: prev.image_url ? prev.image_url : imageUrlInput
-                            }));
-                            setImageUrlInput("");
-                          }
-                        }
-                      }}
-                      placeholder="Paste image URL and press Enter..."
-                      className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
-                    />
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="image_url" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Product Images</Label>
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap gap-3">
+                    {(formData.image_urls && formData.image_urls.length > 0 ? formData.image_urls : (formData.image_url ? [formData.image_url] : [])).map((url, idx) => (
+                      <div key={idx} className="relative w-28 h-28 rounded-2xl overflow-hidden border border-slate-100 group shadow-sm">
+                        <img 
+                          src={url} 
+                          alt={`Preview ${idx + 1}`} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex-shrink-0">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="h-12 rounded-2xl border-dashed border-2 border-slate-200 hover:border-brand-500 hover:bg-brand-50 transition-all px-4"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload
-                    </Button>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-grow">
+                      <Input 
+                        id="image_url" 
+                        value={imageUrlInput} 
+                        onChange={(e) => setImageUrlInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (imageUrlInput) {
+                              setFormData(prev => ({
+                                ...prev,
+                                image_urls: [...(prev.image_urls || []), imageUrlInput],
+                                image_url: prev.image_url ? prev.image_url : imageUrlInput
+                              }));
+                              setImageUrlInput("");
+                            }
+                          }
+                        }}
+                        placeholder="Paste image URL and press Enter..."
+                        className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
+                      />
+                    </div>
+                    <div className="flex-shrink-0">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-12 w-full sm:w-auto rounded-2xl border-dashed border-2 border-slate-200 hover:border-brand-500 hover:bg-brand-50 transition-all px-6"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="pt-4 flex flex-col sm:flex-row gap-3">
+          <DialogFooter className="p-8 pt-4 border-t border-slate-50 flex-shrink-0 flex flex-col sm:flex-row gap-3">
             {product && onDelete && (
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={handleDelete}
-                className={`rounded-2xl h-12 px-6 font-bold transition-all ${isDeleting ? "bg-red-500 text-white border-red-500 hover:bg-red-600" : "text-red-500 border-red-100 hover:bg-red-50"}`}
+                className={`rounded-2xl h-14 px-8 font-bold transition-all ${isDeleting ? "bg-red-500 text-white border-red-500 hover:bg-red-600" : "text-red-500 border-red-100 hover:bg-red-50"}`}
               >
                 {isDeleting ? "Confirm Delete?" : "Delete Product"}
               </Button>
             )}
             <div className="flex-grow" />
-            <Button variant="ghost" type="button" onClick={() => onOpenChange(false)} className="rounded-2xl h-12 px-6 text-slate-500">
+            <Button variant="ghost" type="button" onClick={() => onOpenChange(false)} className="rounded-2xl h-14 px-8 text-slate-500">
               Cancel
             </Button>
-            <Button type="submit" className="bg-[#3a322b] hover:bg-[#4a3f35] rounded-2xl h-12 px-10 text-white font-bold shadow-lg shadow-[#3a322b]/10">
+            <Button type="submit" className="bg-[#3a322b] hover:bg-[#4a3f35] rounded-2xl h-14 px-12 text-white font-bold shadow-lg shadow-[#3a322b]/10">
               {product ? "Save Changes" : "Create Product"}
             </Button>
           </DialogFooter>

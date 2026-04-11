@@ -51,15 +51,15 @@ export default function CategoryManager({ open, onOpenChange, onUpdate }: Catego
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-[2rem] p-8 border-none shadow-2xl">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md rounded-[2rem] p-0 border-none shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+        <DialogHeader className="p-8 pb-4 flex-shrink-0">
           <DialogTitle className="text-2xl font-bold font-display text-[#3a322b] flex items-center gap-2">
             <Tag className="w-5 h-5" />
             Manage Categories
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="flex-1 overflow-y-auto p-8 pt-2 space-y-6 scrollbar-hide">
           <div className="flex gap-2">
             <Input
               placeholder="New category name..."
@@ -76,29 +76,29 @@ export default function CategoryManager({ open, onOpenChange, onUpdate }: Catego
             </Button>
           </div>
 
-          <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto p-1">
+          <div className="flex flex-wrap gap-3 p-1">
             {categories.map((cat) => (
               <div 
                 key={cat}
-                className="flex items-center gap-2 bg-slate-100 text-[#3a322b] px-4 py-2 rounded-full text-sm font-medium group hover:bg-slate-200 transition-all"
+                className="flex items-center gap-2 bg-slate-100 text-[#3a322b] px-5 py-2.5 rounded-full text-sm font-bold group hover:bg-slate-200 transition-all shadow-sm"
               >
                 <span className="capitalize">{cat}</span>
                 <button 
                   onClick={() => handleDelete(cat)}
                   className="text-slate-400 hover:text-red-500 transition-colors"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="p-8 pt-4 border-t border-slate-50 flex justify-end flex-shrink-0">
           <Button 
             variant="ghost" 
             onClick={() => onOpenChange(false)}
-            className="rounded-2xl h-12 px-8 text-slate-500"
+            className="rounded-2xl h-12 px-8 text-slate-500 font-bold"
           >
             Done
           </Button>
