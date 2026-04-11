@@ -51,15 +51,15 @@ export default function CategoryManager({ open, onOpenChange, onUpdate }: Catego
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-[2rem] p-0 border-none shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
-        <DialogHeader className="p-8 pb-0 flex-shrink-0">
+      <DialogContent className="sm:max-w-md rounded-[2rem] p-8 border-none shadow-2xl">
+        <DialogHeader>
           <DialogTitle className="text-2xl font-bold font-display text-[#3a322b] flex items-center gap-2">
             <Tag className="w-5 h-5" />
             Manage Categories
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-grow overflow-y-auto p-8 pt-6 space-y-6">
+        <div className="space-y-6 py-4">
           <div className="flex gap-2">
             <Input
               placeholder="New category name..."
@@ -76,7 +76,7 @@ export default function CategoryManager({ open, onOpenChange, onUpdate }: Catego
             </Button>
           </div>
 
-          <div className="flex flex-wrap gap-2 p-1">
+          <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto p-1">
             {categories.map((cat) => (
               <div 
                 key={cat}
@@ -94,7 +94,7 @@ export default function CategoryManager({ open, onOpenChange, onUpdate }: Catego
           </div>
         </div>
 
-        <div className="p-8 pt-4 flex justify-end border-t border-slate-50 flex-shrink-0">
+        <div className="flex justify-end">
           <Button 
             variant="ghost" 
             onClick={() => onOpenChange(false)}

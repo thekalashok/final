@@ -71,7 +71,12 @@ export default function ShopHome() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col items-center gap-6 md:gap-8">
           <div className="w-full grid grid-cols-3 items-center">
             <div className="flex justify-start">
-              {/* Logo removed */}
+              <img 
+                src="https://raw.githubusercontent.com/thekalashok/final/76c07d6c3acedc538115b5115882461db0e12846/public/40f1609d-e094-4df1-a6a2-5284d5f6220a.png" 
+                alt="KALAA Logo" 
+                className="h-20 md:h-32 w-auto object-contain"
+                referrerPolicy="no-referrer"
+              />
             </div>
 
             <div className="flex flex-col items-center text-center">
@@ -271,6 +276,12 @@ export default function ShopHome() {
           <div className="text-xs text-[#8c7e6d] text-center md:text-right">
             <p>&copy; 2026 KALAA. All rights reserved.</p>
             <p className="mt-1">Designed for Artisans.</p>
+            <button 
+              onClick={() => navigate("/admin/login")}
+              className="mt-4 opacity-0 hover:opacity-100 transition-opacity text-[10px] uppercase tracking-widest"
+            >
+              Admin Access
+            </button>
           </div>
         </div>
       </footer>
