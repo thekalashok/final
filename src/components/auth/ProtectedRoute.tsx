@@ -8,7 +8,7 @@ export default function ProtectedRoute() {
   useEffect(() => {
     const unsubscribe = dataService.onAuthChange((user) => {
       // Check for admin role from the user object
-      const isUserAdmin = user?.role === 'admin' || user?.email === "rajukumbhar2323@gmail.com";
+      const isUserAdmin = user?.role === 'admin';
       setIsAdmin(isUserAdmin);
     });
     return () => unsubscribe();

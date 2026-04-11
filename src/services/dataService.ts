@@ -15,7 +15,27 @@ export const dataService = {
 
   // Auth & Users
   getCurrentUser: async (): Promise<User | null> => {
+    // Check for hardcoded admin session first
+    const adminSession = localStorage.getItem('kalaa_admin_session');
+    if (adminSession === 'true') {
+      return {
+        id: 'admin-id',
+        name: 'Kalaa Admin',
+        email: 'admin@kalaa.com',
+        role: 'admin',
+        addresses: [],
+        created_date: new Date().toISOString()
+      };
+    }
     return supabaseService.getCurrentUser();
+  },
+
+  login: async (adminId: string, password: string): Promise<boolean> => {
+    if (adminId === 'Kalaa' && password === 'Rajo@9321') {
+      localStorage.setItem('kalaa_admin_session', 'true');
+      return true;
+    }
+    return false;
   },
 
   loginWithGoogle: async (): Promise<User | null> => {
@@ -23,10 +43,25 @@ export const dataService = {
   },
 
   logout: async () => {
+    localStorage.removeItem('kalaa_admin_session');
     return supabaseService.logout();
   },
 
   onAuthChange: (callback: (user: User | null) => void) => {
+    // Check for hardcoded admin session
+    const adminSession = localStorage.getItem('kalaa_admin_session');
+    if (adminSession === 'true') {
+      callback({
+        id: 'admin-id',
+        name: 'Kalaa Admin',
+        email: 'admin@kalaa.com',
+        role: 'admin',
+        addresses: [],
+        created_date: new Date().toISOString()
+      });
+      // Return a no-op unsubscribe
+      return () => {};
+    }
     return supabaseService.onAuthChange(callback);
   },
 

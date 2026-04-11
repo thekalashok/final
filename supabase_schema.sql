@@ -70,15 +70,30 @@ ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
--- Create Policies (Simplified for initial migration)
--- Users can read their own profile
+-- Create Policies (Simplified for hardcoded admin bypass)
+-- Drop existing policies first to avoid errors
+DROP POLICY IF EXISTS "Users can read own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+DROP POLICY IF EXISTS "Public full access to products" ON public.products;
+DROP POLICY IF EXISTS "Public full access to categories" ON public.categories;
+DROP POLICY IF EXISTS "Public full access to customers" ON public.customers;
+DROP POLICY IF EXISTS "Public full access to orders" ON public.orders;
+DROP POLICY IF EXISTS "Admins have full access" ON public.products;
+DROP POLICY IF EXISTS "Anyone can view products" ON public.products;
+DROP POLICY IF EXISTS "Anyone can view categories" ON public.categories;
+DROP POLICY IF EXISTS "Anyone can create orders" ON public.orders;
+
+-- Users can read their own profile (if they have a session)
 CREATE POLICY "Users can read own profile" ON public.users FOR SELECT USING (auth.uid() = id);
 -- Users can insert their own profile
 CREATE POLICY "Users can insert own profile" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
 -- Users can update their own profile
 CREATE POLICY "Users can update own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
--- Admins can do everything (Example policy, needs refinement based on role)
-CREATE POLICY "Admins have full access" ON public.products FOR ALL USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
-CREATE POLICY "Anyone can view products" ON public.products FOR SELECT USING (TRUE);
-CREATE POLICY "Anyone can view categories" ON public.categories FOR SELECT USING (TRUE);
-CREATE POLICY "Anyone can create orders" ON public.orders FOR INSERT WITH CHECK (TRUE);
+
+-- Public access for products, categories, customers, and orders
+-- (Required because we are using a hardcoded admin login that bypasses Supabase Auth)
+CREATE POLICY "Public full access to products" ON public.products FOR ALL USING (TRUE);
+CREATE POLICY "Public full access to categories" ON public.categories FOR ALL USING (TRUE);
+CREATE POLICY "Public full access to customers" ON public.customers FOR ALL USING (TRUE);
+CREATE POLICY "Public full access to orders" ON public.orders FOR ALL USING (TRUE);
