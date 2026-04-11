@@ -102,30 +102,15 @@ const COLLECTIONS = {
 
 type Listener = (data: any) => void;
 
-// Simple cache using localStorage to persist across reloads
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+// Simple cache using memory to persist during session
+const memoryCache: Record<string, any> = {};
 
 const getCache = (path: string) => {
-  try {
-    const cached = localStorage.getItem(`cache_${path}`);
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      if (Date.now() - parsed.timestamp < CACHE_DURATION) {
-        return parsed;
-      }
-    }
-  } catch (e) {
-    console.error("Cache read error", e);
-  }
-  return null;
+  return memoryCache[path] || null;
 };
 
 const setCache = (path: string, data: any) => {
-  try {
-    localStorage.setItem(`cache_${path}`, JSON.stringify({ data, timestamp: Date.now() }));
-  } catch (e) {
-    console.error("Cache write error", e);
-  }
+  memoryCache[path] = data;
 };
 
 const FALLBACK_PRODUCTS: Product[] = [
@@ -237,9 +222,11 @@ export const dataService = {
     };
 
     try {
+      console.log(`📡 Connecting to Cloud Firestore for: ${path}`);
       const q = query(collection(db, path));
       unsubscribe = onSnapshot(q, (snapshot) => {
         const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        console.log(`✅ Real-time update received for ${path}: ${data.length} items`);
         // Update cache
         setCache(path, data);
         callback(data);
