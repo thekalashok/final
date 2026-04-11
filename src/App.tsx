@@ -11,7 +11,6 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 export default function App() {
-  console.log('App component rendering...');
   return (
     <ErrorBoundary>
       <BrowserRouter>

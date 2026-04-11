@@ -16,7 +16,6 @@ import { toast } from "sonner";
 import { Toaster } from "../../components/ui/sonner";
 
 export default function ShopHome() {
-  console.log('ShopHome component rendering...');
   const [products, setProducts] = useState<Product[]>(() => {
     const initial = dataService.getInitialData("PRODUCTS");
     return initial.filter((p: any) => p.status === "active");
