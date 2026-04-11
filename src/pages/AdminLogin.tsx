@@ -47,22 +47,12 @@ export default function AdminLogin() {
             onClick={async () => {
               setIsLoading(true);
               try {
-                const user = await dataService.loginWithGoogle();
-                if (user) {
-                  if (user.role === 'admin' || user.email === "rajukumbhar2323@gmail.com") {
-                    toast.success("Welcome back, Admin!");
-                    navigate("/admin");
-                  } else {
-                    toast.error("You do not have admin privileges.");
-                    await dataService.logout();
-                  }
-                } else {
-                  toast.error("Google login failed");
-                }
+                // For Supabase OAuth, this will redirect the entire page
+                await dataService.loginWithGoogle();
+                // The code below might not run due to redirect, but that's okay
               } catch (error: any) {
                 console.error("Login catch block error:", error);
                 toast.error(`Google login failed: ${error.message || "Unknown error"}`);
-              } finally {
                 setIsLoading(false);
               }
             }}

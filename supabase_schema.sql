@@ -73,6 +73,10 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 -- Create Policies (Simplified for initial migration)
 -- Users can read their own profile
 CREATE POLICY "Users can read own profile" ON public.users FOR SELECT USING (auth.uid() = id);
+-- Users can insert their own profile
+CREATE POLICY "Users can insert own profile" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
+-- Users can update their own profile
+CREATE POLICY "Users can update own profile" ON public.users FOR UPDATE USING (auth.uid() = id);
 -- Admins can do everything (Example policy, needs refinement based on role)
 CREATE POLICY "Admins have full access" ON public.products FOR ALL USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'admin'));
 CREATE POLICY "Anyone can view products" ON public.products FOR SELECT USING (TRUE);
