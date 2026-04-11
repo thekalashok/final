@@ -276,12 +276,6 @@ export default function ShopHome() {
           <div className="text-xs text-[#8c7e6d] text-center md:text-right">
             <p>&copy; 2026 KALAA. All rights reserved.</p>
             <p className="mt-1">Designed for Artisans.</p>
-            <button 
-              onClick={() => navigate("/admin/login")}
-              className="mt-4 opacity-0 hover:opacity-100 transition-opacity text-[10px] uppercase tracking-widest"
-            >
-              Admin Access
-            </button>
           </div>
         </div>
       </footer>

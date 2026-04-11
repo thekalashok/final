@@ -142,8 +142,8 @@ export default function Orders() {
       </div>
 
       <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <DialogContent className="sm:max-w-2xl rounded-3xl">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl rounded-[2rem] p-0 border-none shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+          <DialogHeader className="p-8 pb-0 flex-shrink-0">
             <DialogTitle className="text-2xl font-bold font-display flex items-center justify-between">
               Order Details
               <Badge variant="outline" className={`capitalize rounded-full px-3 py-1 border-none ${selectedOrder ? statusColors[selectedOrder.status] : ""}`}>
@@ -153,8 +153,8 @@ export default function Orders() {
           </DialogHeader>
           
           {selectedOrder && (
-            <div className="space-y-8 py-4">
-              <div className="grid grid-cols-2 gap-8">
+            <div className="flex-grow overflow-y-auto p-8 pt-6 space-y-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div className="space-y-1">
                   <p className="text-xs text-slate-500 uppercase tracking-widest">Order Number</p>
                   <p className="font-bold font-mono">{selectedOrder.order_number}</p>
@@ -233,6 +233,15 @@ export default function Orders() {
               </div>
             </div>
           )}
+          <div className="p-8 pt-4 flex justify-end border-t border-slate-50 flex-shrink-0">
+            <Button 
+              variant="ghost" 
+              onClick={() => setSelectedOrder(null)}
+              className="rounded-2xl h-12 px-8 text-slate-500"
+            >
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
