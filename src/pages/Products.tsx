@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>(() => {
-    return dataService.getInitialData("PRODUCTS");
+    return dataService.getInitialData("PRODUCTS") || [];
   });
   const [isLoading, setIsLoading] = useState(products.length === 0);
   const [search, setSearch] = useState("");

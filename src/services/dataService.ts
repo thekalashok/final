@@ -181,7 +181,7 @@ export const dataService = {
     const path = COLLECTIONS[key];
     const cachedData = getCache(path);
     if (cachedData) {
-      return cachedData.data;
+      return cachedData;
     }
     if (path === COLLECTIONS.PRODUCTS) {
       return [];
@@ -198,7 +198,7 @@ export const dataService = {
     // Check cache first for immediate UI update
     const cachedData = getCache(path);
     if (cachedData) {
-      callback(cachedData.data);
+      callback(cachedData);
     }
 
     let unsubscribe: () => void = () => {};
@@ -246,7 +246,7 @@ export const dataService = {
           console.warn(`Quota limit exceeded for ${path}.`);
           const currentCache = getCache(path);
           if (currentCache) {
-            callback(currentCache.data);
+            callback(currentCache);
           } else {
             if (path === COLLECTIONS.CATEGORIES) {
               callback(["amigurumi", "bags", "clothing", "accessories", "home_decor", "custom", "other"]);
@@ -522,7 +522,7 @@ export const dataService = {
     const path = COLLECTIONS.PRODUCTS;
     const cachedData = getCache(path);
     if (cachedData) {
-      return cachedData.data;
+      return cachedData;
     }
     try {
       const snapshot = await getDocs(collection(db, path));
@@ -533,7 +533,7 @@ export const dataService = {
       if (error.message.includes("Quota exceeded")) {
         console.warn(`Quota limit exceeded for ${path}.`);
         const currentCache = getCache(path);
-        return currentCache ? currentCache.data : [];
+        return currentCache || [];
       }
       handleFirestoreError(error, OperationType.LIST, path);
       return [];
@@ -546,14 +546,14 @@ export const dataService = {
       // Update cache
       const path = COLLECTIONS.PRODUCTS;
       const currentCache = getCache(path);
-      if (currentCache) {
-        const existingIndex = currentCache.data.findIndex((p: Product) => p.id === product.id);
+      if (currentCache && Array.isArray(currentCache)) {
+        const existingIndex = currentCache.findIndex((p: Product) => p.id === product.id);
         if (existingIndex >= 0) {
-          currentCache.data[existingIndex] = product;
+          currentCache[existingIndex] = product;
         } else {
-          currentCache.data.push(product);
+          currentCache.push(product);
         }
-        setCache(path, currentCache.data);
+        setCache(path, currentCache);
       } else {
         setCache(path, [product]);
       }
@@ -568,8 +568,8 @@ export const dataService = {
       // Update cache
       const path = COLLECTIONS.PRODUCTS;
       const currentCache = getCache(path);
-      if (currentCache) {
-        const newData = currentCache.data.filter((p: Product) => p.id !== id);
+      if (currentCache && Array.isArray(currentCache)) {
+        const newData = currentCache.filter((p: Product) => p.id !== id);
         setCache(path, newData);
       }
     } catch (error) {
@@ -582,7 +582,7 @@ export const dataService = {
     const path = COLLECTIONS.CUSTOMERS;
     const cachedData = getCache(path);
     if (cachedData) {
-      return cachedData.data;
+      return cachedData;
     }
     try {
       const snapshot = await getDocs(collection(db, path));
@@ -593,7 +593,7 @@ export const dataService = {
       if (error.message.includes("Quota exceeded")) {
         console.warn(`Quota limit exceeded for ${path}.`);
         const currentCache = getCache(path);
-        return currentCache ? currentCache.data : [];
+        return currentCache || [];
       }
       handleFirestoreError(error, OperationType.LIST, path);
       return [];
@@ -622,7 +622,7 @@ export const dataService = {
     if (!forceRefresh) {
       const cachedData = getCache(path);
       if (cachedData) {
-        return cachedData.data;
+        return cachedData;
       }
     }
     try {
@@ -634,7 +634,7 @@ export const dataService = {
       if (error.message.includes("Quota exceeded")) {
         console.warn(`Quota limit exceeded for ${path}.`);
         const currentCache = getCache(path);
-        return currentCache ? currentCache.data : [];
+        return currentCache || [];
       }
       handleFirestoreError(error, OperationType.LIST, path);
       return [];
@@ -645,7 +645,7 @@ export const dataService = {
     const path = `${COLLECTIONS.ORDERS}_${email}`;
     const cachedData = getCache(path);
     if (cachedData) {
-      return cachedData.data;
+      return cachedData;
     }
     try {
       const q = query(collection(db, COLLECTIONS.ORDERS), where("customer_phone", "==", email));
@@ -657,7 +657,7 @@ export const dataService = {
       if (error.message?.includes("Quota exceeded")) {
         console.warn(`Quota limit exceeded for ${path}.`);
         const currentCache = getCache(path);
-        return currentCache ? currentCache.data : [];
+        return currentCache || [];
       }
       handleFirestoreError(error, OperationType.LIST, COLLECTIONS.ORDERS);
       return [];
@@ -741,7 +741,7 @@ export const dataService = {
     const path = COLLECTIONS.CATEGORIES;
     const cachedData = getCache(path);
     if (cachedData) {
-      return cachedData.data;
+      return cachedData;
     }
     try {
       const snapshot = await getDocs(collection(db, path));
@@ -754,7 +754,7 @@ export const dataService = {
       if (error.message.includes("Quota exceeded")) {
         console.warn(`Quota limit exceeded for ${path}.`);
         const currentCache = getCache(path);
-        return currentCache ? currentCache.data : ["amigurumi", "bags", "clothing", "accessories", "home_decor", "custom", "other"];
+        return currentCache || ["amigurumi", "bags", "clothing", "accessories", "home_decor", "custom", "other"];
       }
       handleFirestoreError(error, OperationType.LIST, path);
       return ["amigurumi", "bags", "clothing", "accessories", "home_decor", "custom", "other"];
@@ -768,10 +768,10 @@ export const dataService = {
       // Update cache
       const path = COLLECTIONS.CATEGORIES;
       const currentCache = getCache(path);
-      if (currentCache) {
-        if (!currentCache.data.includes(cat)) {
-          currentCache.data.push(cat);
-          setCache(path, currentCache.data);
+      if (currentCache && Array.isArray(currentCache)) {
+        if (!currentCache.includes(cat)) {
+          currentCache.push(cat);
+          setCache(path, currentCache);
         }
       } else {
         setCache(path, [cat]);
@@ -788,8 +788,8 @@ export const dataService = {
       // Update cache
       const path = COLLECTIONS.CATEGORIES;
       const currentCache = getCache(path);
-      if (currentCache) {
-        const newData = currentCache.data.filter((c: string) => c !== cat);
+      if (currentCache && Array.isArray(currentCache)) {
+        const newData = currentCache.filter((c: string) => c !== cat);
         setCache(path, newData);
       }
     } catch (error) {

@@ -17,18 +17,18 @@ import { Toaster } from "../../components/ui/sonner";
 
 export default function ShopHome() {
   const [products, setProducts] = useState<Product[]>(() => {
-    const initial = dataService.getInitialData("PRODUCTS");
+    const initial = dataService.getInitialData("PRODUCTS") || [];
     return initial.filter((p: any) => p.status === "active");
   });
   const [isLoading, setIsLoading] = useState(products.length === 0);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [categories, setCategories] = useState<{ id: string; label: string }[]>(() => {
-    const initial = dataService.getInitialData("CATEGORIES");
+    const initial = dataService.getInitialData("CATEGORIES") || [];
     return [
       { id: "all", label: "All" },
       ...initial
-        .map((doc: any) => doc.name)
+        .map((doc: any) => typeof doc === 'string' ? doc : doc.name)
         .filter((cat: any) => typeof cat === 'string' && cat.length > 0)
         .map((cat: string) => ({ id: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }))
     ];
@@ -39,18 +39,22 @@ export default function ShopHome() {
 
   useEffect(() => {
     const unsubscribeProducts = dataService.subscribe("PRODUCTS", (newProducts) => {
-      setProducts(newProducts.filter((p: any) => p.status === "active"));
+      if (newProducts && Array.isArray(newProducts)) {
+        setProducts(newProducts.filter((p: any) => p.status === "active"));
+      }
       setIsLoading(false);
     });
 
     const unsubscribeCategories = dataService.subscribe("CATEGORIES", (newCats) => {
-      setCategories([
-        { id: "all", label: "All" },
-        ...newCats
-          .map((doc: any) => doc.name)
-          .filter((cat: any) => typeof cat === 'string' && cat.length > 0)
-          .map((cat: string) => ({ id: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }))
-      ]);
+      if (newCats && Array.isArray(newCats)) {
+        setCategories([
+          { id: "all", label: "All" },
+          ...newCats
+            .map((doc: any) => typeof doc === 'string' ? doc : doc.name)
+            .filter((cat: any) => typeof cat === 'string' && cat.length > 0)
+            .map((cat: string) => ({ id: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }))
+        ]);
+      }
     });
 
     return () => {

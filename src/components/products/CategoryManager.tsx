@@ -19,6 +19,7 @@ export default function CategoryManager({ open, onOpenChange, onUpdate }: Catego
   useEffect(() => {
     // Subscribe to live updates
     const unsubscribe = dataService.subscribe("CATEGORIES", (newCategories) => {
+      if (!newCategories || !Array.isArray(newCategories)) return;
       // The subscribe method returns objects if it maps doc.data(), 
       // but getCategories returns string[]. 
       // Let's check how subscribe handles it.
