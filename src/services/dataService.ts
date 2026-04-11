@@ -22,6 +22,7 @@ import {
   signInWithPopup,
   signInWithCustomToken,
   sendEmailVerification,
+  ActionCodeSettings,
   User as FirebaseUser
 } from "firebase/auth";
 import { db, auth } from "../firebase";
@@ -191,6 +192,20 @@ const FALLBACK_PRODUCTS: Product[] = [
 ];
 
 export const dataService = {
+  getInitialData: (key: keyof typeof COLLECTIONS) => {
+    const path = COLLECTIONS[key];
+    const cachedData = getCache(path);
+    if (cachedData) {
+      return cachedData.data;
+    }
+    if (path === COLLECTIONS.PRODUCTS) {
+      return FALLBACK_PRODUCTS;
+    }
+    if (path === COLLECTIONS.CATEGORIES) {
+      return [{ name: "amigurumi" }, { name: "bags" }, { name: "clothing" }, { name: "accessories" }, { name: "home_decor" }, { name: "custom" }, { name: "other" }];
+    }
+    return [];
+  },
   // Subscription
   subscribe: (key: keyof typeof COLLECTIONS, callback: Listener) => {
     const path = COLLECTIONS[key];
@@ -396,7 +411,11 @@ export const dataService = {
       const firebaseUser = userCredential.user;
       
       // Send verification email
-      await sendEmailVerification(firebaseUser);
+      const actionCodeSettings: ActionCodeSettings = {
+        url: 'https://ais-dev-uynkhm6qtvcfbvysyxzvae-683807016219.asia-east1.run.app/login',
+        handleCodeInApp: true,
+      };
+      await sendEmailVerification(firebaseUser, actionCodeSettings);
       
       const isAdmin = userData.email === "rajukumbhar2323@gmail.com" || userData.email === "admin@kalaa.com";
       const newUser: User = {
@@ -415,7 +434,10 @@ export const dataService = {
       
       await setDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), newUser);
       return newUser;
-    } catch (error) {
+    } catch (error: any) {
+      if (error.code === 'auth/email-already-in-use') {
+        throw new Error("This email is already registered. Please login instead.");
+      }
       handleFirestoreError(error, OperationType.CREATE, COLLECTIONS.USERS);
       throw error;
     }
@@ -423,8 +445,29 @@ export const dataService = {
 
   sendVerification: async () => {
     if (auth.currentUser) {
-      await sendEmailVerification(auth.currentUser);
+      const actionCodeSettings: ActionCodeSettings = {
+        url: 'https://ais-dev-uynkhm6qtvcfbvysyxzvae-683807016219.asia-east1.run.app/login',
+        handleCodeInApp: true,
+      };
+      await sendEmailVerification(auth.currentUser, actionCodeSettings);
     }
+  },
+
+  reloadUser: async (): Promise<User | null> => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      const firebaseUser = auth.currentUser;
+      const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        return {
+          ...data,
+          addresses: data.addresses || [],
+          emailVerified: firebaseUser.emailVerified
+        } as User;
+      }
+    }
+    return null;
   },
 
   logout: async () => {
@@ -665,6 +708,31 @@ export const dataService = {
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `${COLLECTIONS.ORDERS}/${order.id}`);
     }
+  },
+
+  subscribeToOrder: (orderId: string, callback: (order: Order | null) => void) => {
+    const docRef = doc(db, COLLECTIONS.ORDERS, orderId);
+    return onSnapshot(docRef, (doc) => {
+      if (doc.exists()) {
+        callback({ ...doc.data(), id: doc.id } as Order);
+      } else {
+        callback(null);
+      }
+    }, (error) => {
+      console.error("Error subscribing to order:", error);
+      handleFirestoreError(error, OperationType.GET, `${COLLECTIONS.ORDERS}/${orderId}`);
+    });
+  },
+
+  subscribeToUserOrders: (email: string, callback: (orders: Order[]) => void) => {
+    const q = query(collection(db, COLLECTIONS.ORDERS), where("customer_phone", "==", email));
+    return onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
+      callback(data);
+    }, (error) => {
+      console.error("Error subscribing to user orders:", error);
+      handleFirestoreError(error, OperationType.LIST, COLLECTIONS.ORDERS);
+    });
   },
 
   deleteOrder: async (id: string) => {

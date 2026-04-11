@@ -10,7 +10,9 @@ import CategoryManager from "../components/products/CategoryManager";
 import { toast } from "sonner";
 
 export default function Products() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(() => {
+    return dataService.getInitialData("PRODUCTS");
+  });
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);

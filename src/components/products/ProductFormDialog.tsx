@@ -36,6 +36,8 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
     status: "active",
   });
 
+  const [imageUrlInput, setImageUrlInput] = useState("");
+
   useEffect(() => {
     if (open) {
       dataService.getCategories().then(setCategories);
@@ -69,8 +71,10 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
       cost_price: Number(formData.cost_price) || 0,
       stock: Number(formData.stock) || 0,
       image_url: formData.image_url || `https://picsum.photos/seed/${encodeURIComponent(formData.name || 'product')}/400/400`,
+      image_urls: formData.image_urls || [],
       sku: formData.sku || `SKU-${Date.now()}`,
       status: formData.status || "active",
+      shipping_info: formData.shipping_info || "",
       created_date: product?.created_date || new Date().toISOString(),
       updated_date: new Date().toISOString(),
       created_by: "admin",
@@ -87,10 +91,26 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, image_url: reader.result as string }));
+        setFormData(prev => ({ 
+          ...prev, 
+          image_url: prev.image_url ? prev.image_url : (reader.result as string),
+          image_urls: [...(prev.image_urls || []), reader.result as string]
+        }));
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const removeImage = (index: number) => {
+    setFormData(prev => {
+      const newUrls = [...(prev.image_urls || [])];
+      newUrls.splice(index, 1);
+      return {
+        ...prev,
+        image_urls: newUrls,
+        image_url: newUrls.length > 0 ? newUrls[0] : ""
+      };
+    });
   };
 
   const handleDelete = () => {
@@ -129,11 +149,11 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
             
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="description" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Description</Label>
-              <Input 
+              <textarea 
                 id="description" 
                 value={formData.description} 
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
+                className="w-full min-h-[100px] p-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                 placeholder="Briefly describe your craft..."
                 required 
               />
@@ -197,34 +217,82 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
               />
             </div>
 
+            <div className="space-y-1.5">
+              <Label htmlFor="stock" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Stock Quantity</Label>
+              <Input 
+                id="stock" 
+                type="number" 
+                value={formData.stock} 
+                onChange={(e) => setFormData(prev => ({ ...prev, stock: Number(e.target.value) }))}
+                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
+                required 
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="sku" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">SKU / Product Code</Label>
+              <Input 
+                id="sku" 
+                value={formData.sku} 
+                onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
+                className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
+              />
+            </div>
+
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="image_url" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Product Image</Label>
+              <Label htmlFor="shipping_info" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Shipping Info</Label>
+              <textarea 
+                id="shipping_info" 
+                value={formData.shipping_info || ""} 
+                onChange={(e) => setFormData(prev => ({ ...prev, shipping_info: e.target.value }))}
+                className="w-full min-h-[80px] p-3 rounded-2xl border border-slate-100 bg-slate-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                placeholder="e.g. Each piece is made to order and takes 5-6 days to prepare."
+              />
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="image_url" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Product Images</Label>
               <div className="flex flex-col gap-3">
-                {formData.image_url && (
-                  <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-slate-100 group shadow-sm">
-                    <img 
-                      src={formData.image_url} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, image_url: "" }))}
-                      className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-3">
+                  {(formData.image_urls && formData.image_urls.length > 0 ? formData.image_urls : (formData.image_url ? [formData.image_url] : [])).map((url, idx) => (
+                    <div key={idx} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-slate-100 group shadow-sm">
+                      <img 
+                        src={url} 
+                        alt={`Preview ${idx + 1}`} 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
                 
                 <div className="flex gap-2">
                   <div className="flex-grow">
                     <Input 
                       id="image_url" 
-                      value={formData.image_url} 
-                      onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
-                      placeholder="Paste image URL..."
+                      value={imageUrlInput} 
+                      onChange={(e) => setImageUrlInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (imageUrlInput) {
+                            setFormData(prev => ({
+                              ...prev,
+                              image_urls: [...(prev.image_urls || []), imageUrlInput],
+                              image_url: prev.image_url ? prev.image_url : imageUrlInput
+                            }));
+                            setImageUrlInput("");
+                          }
+                        }
+                      }}
+                      placeholder="Paste image URL and press Enter..."
                       className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus-visible:ring-brand-500"
                     />
                   </div>

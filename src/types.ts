@@ -44,8 +44,10 @@ export interface Product {
   cost_price: number;
   stock: number;
   image_url: string;
+  image_urls?: string[];
   sku: string;
   status: ProductStatus;
+  shipping_info?: string;
   created_date: string;
   updated_date: string;
   created_by: string;
@@ -83,6 +85,7 @@ export interface Order {
   total: number;
   payment_method: PaymentMethod;
   status: OrderStatus;
+  tracking_id?: string;
   created_date: string;
   updated_date: string;
   created_by: string;

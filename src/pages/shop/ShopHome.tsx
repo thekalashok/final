@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingBag, Search, Filter, ShoppingCart, Plus, Minus, X, CreditCard, User, MapPin, Phone, Package, LogOut, History, Settings, Lock, ArrowRight, ChevronRight } from "lucide-react";
+import { ShoppingBag, Search, Filter, ShoppingCart, Plus, Minus, X, CreditCard, User, MapPin, Phone, Package, LogOut, History, Settings, Lock, ArrowRight, ChevronRight, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { dataService } from "../../services/dataService";
 import { Product, LineItem, Order, Address } from "../../types";
@@ -16,57 +16,27 @@ import { toast } from "sonner";
 import { Toaster } from "../../components/ui/sonner";
 
 export default function ShopHome() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [cart, setCart] = useState<LineItem[]>([]);
+  const [products, setProducts] = useState<Product[]>(() => {
+    const initial = dataService.getInitialData("PRODUCTS");
+    return initial.filter((p: any) => p.status === "active");
+  });
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [customerInfo, setCustomerInfo] = useState({ name: "", phone: "", address: "" });
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    if (isCheckoutOpen && user) {
-      const defaultAddr = user.addresses?.find((a: Address) => a.isDefault) || user.addresses?.[0];
-      setCustomerInfo({
-        name: user.name || "",
-        phone: user.mobile || "",
-        address: defaultAddr ? `${defaultAddr.flatNo}, ${defaultAddr.locality}, ${defaultAddr.city}, ${defaultAddr.state} - ${defaultAddr.pincode}` : ""
-      });
-    }
-  }, [isCheckoutOpen, user]);
-  const [accountView, setAccountView] = useState<"menu" | "history" | "addresses" | "settings">("menu");
-  const [userOrders, setUserOrders] = useState<Order[]>([]);
-  const [profileForm, setProfileForm] = useState({ 
-    firstName: "", 
-    lastName: "", 
-    mobile: ""
+  const [categories, setCategories] = useState<{ id: string; label: string }[]>(() => {
+    const initial = dataService.getInitialData("CATEGORIES");
+    return [
+      { id: "all", label: "All" },
+      ...initial
+        .map((doc: any) => doc.name)
+        .filter((cat: any) => typeof cat === 'string' && cat.length > 0)
+        .map((cat: string) => ({ id: cat, label: cat.charAt(0).toUpperCase() + cat.slice(1) }))
+    ];
   });
-  const [newAddressForm, setNewAddressForm] = useState<Partial<Address>>({
-    type: 'Home',
-    isDefault: false
-  });
-  const [categories, setCategories] = useState<{ id: string; label: string }[]>([]);
   const navigate = useNavigate();
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    const unsubscribeAuth = dataService.onAuthChange(async (updatedUser) => {
-      setUser(updatedUser);
-      if (updatedUser) {
-        const identifier = updatedUser.mobile || updatedUser.email || updatedUser.id;
-        const orders = await dataService.getUserOrders(identifier);
-        setUserOrders(orders);
-        setProfileForm({ 
-          firstName: updatedUser.firstName || updatedUser.name?.split(' ')[0] || "", 
-          lastName: updatedUser.lastName || updatedUser.name?.split(' ').slice(1).join(' ') || "", 
-          mobile: updatedUser.mobile || ""
-        });
-      } else {
-        setUserOrders([]);
-      }
-    });
-
     const unsubscribeProducts = dataService.subscribe("PRODUCTS", (newProducts) => {
       setProducts(newProducts.filter((p: any) => p.status === "active"));
     });
@@ -82,147 +52,15 @@ export default function ShopHome() {
     });
 
     return () => {
-      unsubscribeAuth();
       unsubscribeProducts();
       unsubscribeCategories();
     };
   }, []);
 
-  const handleLogout = async () => {
-    await dataService.logout();
-    setAccountView("menu");
-    toast.success("Logged out successfully");
-  };
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    const updated = {
-      ...user,
-      firstName: profileForm.firstName,
-      lastName: profileForm.lastName,
-      mobile: profileForm.mobile,
-      name: `${profileForm.firstName} ${profileForm.lastName}`.trim()
-    };
-    await dataService.updateUser(updated);
-    toast.success("Profile updated!");
-  };
-
-  const handleAddAddress = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !newAddressForm.pincode || !newAddressForm.city || !newAddressForm.state || !newAddressForm.locality || !newAddressForm.flatNo || !newAddressForm.name || !newAddressForm.phone) {
-      toast.error("Please fill all required fields");
-      return;
-    }
-    
-    const newAddr: Address = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: newAddressForm.name,
-      phone: newAddressForm.phone,
-      pincode: newAddressForm.pincode,
-      city: newAddressForm.city,
-      state: newAddressForm.state,
-      locality: newAddressForm.locality,
-      flatNo: newAddressForm.flatNo,
-      landmark: newAddressForm.landmark || "",
-      type: newAddressForm.type as 'Home' | 'Office' | 'Other',
-      isDefault: newAddressForm.isDefault || false
-    };
-
-    let updatedAddresses = [...(user.addresses || [])];
-    if (newAddr.isDefault) {
-      updatedAddresses = updatedAddresses.map(a => ({ ...a, isDefault: false }));
-    }
-    updatedAddresses.push(newAddr);
-
-    const updated = {
-      ...user,
-      addresses: updatedAddresses
-    };
-    await dataService.updateUser(updated);
-    setNewAddressForm({ type: 'Home', isDefault: false });
-    toast.success("Address added!");
-    setAccountView("addresses"); // Go back to list if needed
-  };
-
-  const removeAddress = async (addrId: string) => {
-    if (!user) return;
-    const updated = {
-      ...user,
-      addresses: user.addresses.filter((a: Address) => a.id !== addrId)
-    };
-    await dataService.updateUser(updated);
-    toast.success("Address removed");
-  };
-
   const filteredProducts = products.filter(p => 
     (category === "all" || p.category.toLowerCase().replace(" ", "_") === category) &&
     p.name.toLowerCase().includes(search.toLowerCase())
   );
-
-  const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.product_id === product.id);
-      if (existing) {
-        return prev.map(item => 
-          item.product_id === product.id 
-            ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.unit_price }
-            : item
-        );
-      }
-      return [...prev, {
-        product_id: product.id,
-        product_name: product.name,
-        quantity: 1,
-        unit_price: product.price,
-        total: product.price
-      }];
-    });
-    toast.success(`${product.name} added to bag!`);
-  };
-
-  const updateQuantity = (productId: string, delta: number) => {
-    setCart(prev => prev.map(item => {
-      if (item.product_id === productId) {
-        const newQty = Math.max(0, item.quantity + delta);
-        return { ...item, quantity: newQty, total: newQty * item.unit_price };
-      }
-      return item;
-    }).filter(item => item.quantity > 0));
-  };
-
-  const cartTotal = cart.reduce((acc, item) => acc + item.total, 0);
-
-  const handleCheckout = async () => {
-    if (!customerInfo.name || !customerInfo.phone || !customerInfo.address) {
-      toast.error("Please fill in all customer details.");
-      return;
-    }
-
-    const orderNumber = `ORD-${Date.now()}`;
-    const newOrder: Order = {
-      id: orderNumber,
-      order_number: orderNumber,
-      customer_name: customerInfo.name,
-      customer_phone: customerInfo.phone,
-      customer_address: customerInfo.address,
-      items: cart,
-      subtotal: cartTotal,
-      discount: 0,
-      total: cartTotal,
-      payment_method: "UPI",
-      status: "pending",
-      created_date: new Date().toISOString(),
-      updated_date: new Date().toISOString(),
-      created_by: "customer",
-    };
-
-    await dataService.saveOrder(newOrder);
-    setCart([]);
-    setIsCheckoutOpen(false);
-    setCustomerInfo({ name: "", phone: "", address: "" });
-    toast.success(`Order placed successfully! Your order number is ${newOrder.order_number}`);
-  };
 
   return (
     <div className="min-h-screen bg-[#fdfbf7] text-[#2d2519]">
@@ -231,458 +69,36 @@ export default function ShopHome() {
       {/* Header */}
       <header className="w-full bg-[#fdfbf7] pt-4 md:pt-8 pb-4">
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col items-center gap-6 md:gap-8">
-          <div className="w-full flex items-center justify-between md:grid md:grid-cols-3">
-            <div className="hidden md:flex items-center">
-              {/* Left side empty for balance or could add search here */}
+          <div className="w-full grid grid-cols-3 items-center">
+            <div className="flex justify-start">
+              <img 
+                src="https://raw.githubusercontent.com/thekalashok/final/76c07d6c3acedc538115b5115882461db0e12846/public/40f1609d-e094-4df1-a6a2-5284d5f6220a.png" 
+                alt="KALAA Logo" 
+                className="h-20 md:h-32 w-auto object-contain"
+                referrerPolicy="no-referrer"
+              />
             </div>
 
             <div className="flex flex-col items-center text-center">
-              <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl font-bold tracking-[0.3em] md:tracking-[0.6em] text-[#4a3f35] uppercase md:mr-[-0.6em]">
+              <h1 className="font-serif text-3xl sm:text-4xl md:text-6xl font-bold tracking-[0.4em] text-[#4a3f35] uppercase">
                 KALAA
               </h1>
-              <p className="text-[9px] md:text-[11px] tracking-[0.3em] md:tracking-[0.5em] text-[#8c7e6d] uppercase mt-2 md:mt-4 font-medium md:mr-[-0.5em]">
+              <p className="text-[8px] md:text-[10px] tracking-[0.2em] text-[#8c7e6d] uppercase mt-1 font-medium">
                 Handcrafted with Love
               </p>
             </div>
 
             <div className="flex items-center justify-end gap-2 md:gap-3">
-              {user ? (
-                <Sheet onOpenChange={(open) => !open && setAccountView("menu")}>
-                  <SheetTrigger render={
-                    <button className="w-10 h-10 bg-[#f7f3eb] text-[#3a322b] rounded-full flex items-center justify-center hover:bg-[#ece4d5] transition-all shadow-sm">
-                      <User className="w-5 h-5" />
-                    </button>
-                  } />
-                  <SheetContent className="w-full sm:max-w-md flex flex-col bg-[#fdfbf7]">
-                    <SheetHeader>
-                      <SheetTitle className="font-serif text-2xl flex items-center gap-2">
-                        {accountView !== "menu" && (
-                          <button onClick={() => setAccountView("menu")} className="p-1 hover:bg-[#f7f3eb] rounded-full">
-                            <ArrowRight className="w-5 h-5 rotate-180" />
-                          </button>
-                        )}
-                        <User className="w-5 h-5" />
-                        {accountView === "menu" ? "My Account" : 
-                         accountView === "history" ? "Order History" :
-                         accountView === "addresses" ? "Saved Addresses" : "Account Settings"}
-                      </SheetTitle>
-                    </SheetHeader>
-                    
-                    <div className="flex-1 overflow-y-auto min-h-0">
-                      {accountView === "menu" && (
-                        <div className="h-full flex flex-col pt-4">
-                          <div className="flex items-center gap-4 px-6 mb-6">
-                            <div className="w-20 h-20 bg-[#1a1a1a] rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                              {user?.name ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'U'}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex justify-between items-start">
-                                <h3 className="font-bold text-lg text-[#3a322b]">{user?.name || 'User'}</h3>
-                                <button className="text-[#008296] text-sm font-medium">Edit</button>
-                              </div>
-                              <p className="text-sm text-[#8c7e6d]">{user?.email}</p>
-                              <p className="text-sm text-[#8c7e6d]">{user?.mobile}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex-1">
-                            <div className="bg-white border-y border-[#ece4d5]">
-                              <button 
-                                onClick={() => setAccountView("history")}
-                                className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors"
-                              >
-                                <span className="text-[#3a322b]">Orders</span>
-                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
-                              </button>
-                              <button 
-                                onClick={() => navigate("/track-order")}
-                                className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors"
-                              >
-                                <span className="text-[#3a322b]">Track Order</span>
-                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
-                              </button>
-                              <button className="w-full flex items-center justify-between p-4 hover:bg-[#fdfbf7] transition-colors">
-                                <span className="text-[#3a322b]">Customer Care</span>
-                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
-                              </button>
-                            </div>
-
-                            <div className="bg-white border-b border-[#ece4d5] mt-2">
-                              <button className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors">
-                                <span className="text-[#3a322b]">Saved Cards</span>
-                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
-                              </button>
-                              <button 
-                                onClick={() => setAccountView("addresses")}
-                                className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors"
-                              >
-                                <span className="text-[#3a322b]">Address</span>
-                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
-                              </button>
-                              <button className="w-full flex items-center justify-between p-4 hover:bg-[#fdfbf7] transition-colors">
-                                <span className="text-[#3a322b]">Notifications</span>
-                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
-                              </button>
-                            </div>
-
-                            <div className="bg-white border-b border-[#ece4d5] mt-2">
-                              <button className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors">
-                                <span className="text-[#3a322b]">How To Return</span>
-                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
-                              </button>
-                              <button className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors">
-                                <span className="text-[#3a322b]">Terms & Conditions</span>
-                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
-                              </button>
-                              <button className="w-full flex items-center justify-between p-4 border-b border-[#ece4d5] hover:bg-[#fdfbf7] transition-colors">
-                                <span className="text-[#3a322b]">Promotions Terms & Conditions</span>
-                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
-                              </button>
-                              <button className="w-full flex items-center justify-between p-4 hover:bg-[#fdfbf7] transition-colors">
-                                <span className="text-[#3a322b]">Returns & Refunds Policy</span>
-                                <ChevronRight className="w-5 h-5 text-[#8c7e6d]" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {accountView === "history" && (
-                        <div className="py-6 space-y-4">
-                          {userOrders.length === 0 ? (
-                            <div className="text-center py-10">
-                              <Package className="w-12 h-12 text-[#ece4d5] mx-auto mb-4" />
-                              <p className="text-[#8c7e6d]">No orders yet</p>
-                            </div>
-                          ) : (
-                            userOrders.map(order => (
-                              <div key={order.id} className="bg-white p-4 rounded-2xl border border-[#ece4d5] shadow-sm">
-                                <div className="flex justify-between items-start mb-2">
-                                  <div>
-                                    <p className="font-bold text-[#4a3f35]">{order.order_number}</p>
-                                    <p className="text-xs text-[#8c7e6d]">{new Date(order.created_date).toLocaleDateString()}</p>
-                                  </div>
-                                  <Badge variant="outline" className="capitalize bg-[#f7f3eb] text-[#b0966a] border-none">
-                                    {order.status}
-                                  </Badge>
-                                </div>
-                                <div className="space-y-1 mt-3">
-                                  {order.items.map((item, idx) => (
-                                    <div key={idx} className="text-sm text-[#4a3f35] flex justify-between">
-                                      <span>{item.quantity}x {item.product_name}</span>
-                                      <span>₹{item.total}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                                <div className="mt-3 pt-3 border-t border-[#f7f3eb] flex justify-between font-bold text-[#3a322b]">
-                                  <span>Total</span>
-                                  <span>₹{order.total}</span>
-                                </div>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      )}
-
-                      {accountView === "addresses" && (
-                        <div className="py-6 space-y-6 px-4">
-                          <form onSubmit={handleAddAddress} className="space-y-6">
-                            <div>
-                              <h4 className="font-bold text-[#3a322b] mb-4">Contact Info</h4>
-                              <div className="space-y-4">
-                                <div className="space-y-1">
-                                  <Label className="text-[#8c7e6d] text-xs">Name</Label>
-                                  <Input 
-                                    value={newAddressForm.name || ""}
-                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, name: e.target.value }))}
-                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                                    required
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-[#8c7e6d] text-xs">Phone Number (+91)</Label>
-                                  <Input 
-                                    value={newAddressForm.phone || ""}
-                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, phone: e.target.value }))}
-                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                                    required
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div>
-                              <h4 className="font-bold text-[#3a322b] mb-4">Address Info</h4>
-                              <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-1">
-                                    <Label className="text-[#8c7e6d] text-xs">Pincode</Label>
-                                    <Input 
-                                      value={newAddressForm.pincode || ""}
-                                      onChange={(e) => setNewAddressForm(prev => ({ ...prev, pincode: e.target.value }))}
-                                      className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                                      required
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-[#8c7e6d] text-xs">City</Label>
-                                    <Input 
-                                      value={newAddressForm.city || ""}
-                                      onChange={(e) => setNewAddressForm(prev => ({ ...prev, city: e.target.value }))}
-                                      className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                                      required
-                                    />
-                                  </div>
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-[#8c7e6d] text-xs">State</Label>
-                                  <Input 
-                                    value={newAddressForm.state || ""}
-                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, state: e.target.value }))}
-                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                                    required
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-[#8c7e6d] text-xs">Locality / Area / Street</Label>
-                                  <Input 
-                                    value={newAddressForm.locality || ""}
-                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, locality: e.target.value }))}
-                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                                    required
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-[#8c7e6d] text-xs">Flat no / Building Name</Label>
-                                  <Input 
-                                    value={newAddressForm.flatNo || ""}
-                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, flatNo: e.target.value }))}
-                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                                    required
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-[#8c7e6d] text-xs">Landmark (optional)</Label>
-                                  <Input 
-                                    value={newAddressForm.landmark || ""}
-                                    onChange={(e) => setNewAddressForm(prev => ({ ...prev, landmark: e.target.value }))}
-                                    className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div>
-                              <h4 className="font-bold text-[#3a322b] mb-4">Type of Address</h4>
-                              <div className="flex gap-6 mb-6">
-                                {['Home', 'Office', 'Other'].map(type => (
-                                  <label key={type} className="flex items-center gap-2 cursor-pointer">
-                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${newAddressForm.type === type ? 'border-[#3a322b]' : 'border-[#8c7e6d]'}`}>
-                                      {newAddressForm.type === type && <div className="w-2 h-2 bg-[#3a322b] rounded-full" />}
-                                    </div>
-                                    <span className="text-sm text-[#3a322b]">{type}</span>
-                                  </label>
-                                ))}
-                              </div>
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <div className={`w-5 h-5 rounded border flex items-center justify-center ${newAddressForm.isDefault ? 'border-[#3a322b] bg-[#3a322b]' : 'border-[#8c7e6d]'}`}>
-                                  {newAddressForm.isDefault && <div className="w-3 h-3 bg-white" style={{ clipPath: 'polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%)' }} />}
-                                </div>
-                                <span className="text-sm text-[#3a322b]">Make as default address</span>
-                              </label>
-                            </div>
-
-                            <Button type="submit" className="w-full h-12 bg-[#1a1a1a] text-white rounded-lg font-bold">
-                              Save Address
-                            </Button>
-                          </form>
-
-                          {user.addresses && user.addresses.length > 0 && (
-                            <div className="space-y-4 pt-8 border-t border-[#ece4d5]">
-                              <Label className="text-[#8c7e6d] font-bold">Saved Addresses</Label>
-                              {user.addresses.map((addr: Address) => (
-                                <div key={addr.id} className="p-4 bg-white rounded-xl border border-[#ece4d5] relative">
-                                  {addr.isDefault && <Badge className="absolute top-4 right-4 bg-[#f7f3eb] text-[#b0966a] border-none">Default</Badge>}
-                                  <div className="flex gap-2 items-center mb-2">
-                                    <span className="font-bold text-[#3a322b]">{addr.name}</span>
-                                    <Badge variant="outline" className="text-xs">{addr.type}</Badge>
-                                  </div>
-                                  <p className="text-sm text-[#4a3f35] leading-relaxed mb-1">{addr.flatNo}, {addr.locality}</p>
-                                  <p className="text-sm text-[#4a3f35] leading-relaxed mb-2">{addr.city}, {addr.state} - {addr.pincode}</p>
-                                  <p className="text-sm text-[#4a3f35] font-medium">Phone: {addr.phone}</p>
-                                  <button 
-                                    onClick={() => removeAddress(addr.id)}
-                                    className="absolute bottom-4 right-4 text-xs text-red-500 hover:underline"
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {accountView === "settings" && (
-                        <form onSubmit={handleUpdateProfile} className="py-6 px-4 space-y-8">
-                          <div className="space-y-6">
-                            <div className="space-y-1">
-                              <Label className="text-[#8c7e6d] text-xs">First Name*</Label>
-                              <Input 
-                                value={profileForm.firstName}
-                                onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
-                                className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                                required
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-[#8c7e6d] text-xs">Last Name*</Label>
-                              <Input 
-                                value={profileForm.lastName}
-                                onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
-                                className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                                required
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label className="text-[#8c7e6d] text-xs">Mobile Number*</Label>
-                              <Input 
-                                value={profileForm.mobile}
-                                onChange={(e) => setProfileForm(prev => ({ ...prev, mobile: e.target.value }))}
-                                className="border-0 border-b border-[#ece4d5] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#3a322b]"
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex gap-4 pt-4">
-                            <Button type="button" variant="outline" onClick={() => setAccountView("menu")} className="flex-1 h-12 rounded-lg font-bold border-[#ece4d5]">
-                              Cancel
-                            </Button>
-                            <Button type="submit" className="flex-1 h-12 bg-[#1a1a1a] text-white rounded-lg font-bold">
-                              Update
-                            </Button>
-                          </div>
-                        </form>
-                      )}
-                    </div>
-
-                    <div className="p-6 pt-4 border-t border-[#ece4d5] mt-auto bg-white">
-                      <Button 
-                        variant="outline"
-                        className="w-full h-14 rounded-2xl border-red-100 text-red-500 hover:bg-red-50 hover:text-red-600 flex items-center justify-center gap-2"
-                        onClick={handleLogout}
-                      >
-                        <LogOut className="w-5 h-5" />
-                        Sign Out
-                      </Button>
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              ) : (
-                <button 
-                  onClick={() => navigate("/login")}
-                  className="w-10 h-10 bg-[#f7f3eb] text-[#3a322b] rounded-full flex items-center justify-center hover:bg-[#ece4d5] transition-all shadow-sm"
-                >
-                  <User className="w-5 h-5" />
-                </button>
-              )}
-
-              <Sheet>
-                <SheetTrigger render={
-                  <button className="flex items-center gap-2 bg-[#3a322b] text-white px-5 py-2.5 rounded-full hover:bg-[#4a3f35] transition-all shadow-md">
-                    <ShoppingBag className="w-4 h-4" />
-                    <span className="text-sm font-medium">Bag</span>
-                    {cart.length > 0 && (
-                      <span className="bg-white text-[#3a322b] text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center ml-1">
-                        {cart.reduce((acc, item) => acc + item.quantity, 0)}
-                      </span>
-                    )}
-                  </button>
-                } />
-              <SheetContent className="w-full sm:max-w-md flex flex-col bg-[#fdfbf7]">
-                <SheetHeader>
-                  <SheetTitle className="font-serif text-2xl flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5" />
-                    Your Shopping Bag
-                  </SheetTitle>
-                </SheetHeader>
-                
-                <ScrollArea className="flex-grow mt-8">
-                  {cart.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-[#8c7e6d]">
-                      <ShoppingBag className="w-12 h-12 mb-4 opacity-20" />
-                      <p className="font-medium">Your bag is empty</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {cart.map((item) => (
-                        <div key={item.product_id} className="flex gap-4 p-4 bg-white rounded-2xl border border-[#ece4d5] shadow-sm">
-                          <div className="w-20 h-20 bg-[#f7f3eb] rounded-xl overflow-hidden flex-shrink-0">
-                            <img 
-                              src={products.find(p => p.id === item.product_id)?.image_url} 
-                              alt={item.product_name} 
-                              className="w-full h-full object-cover"
-                              referrerPolicy="no-referrer"
-                            />
-                          </div>
-                          <div className="flex-grow">
-                            <h4 className="font-bold text-sm">{item.product_name}</h4>
-                            <p className="text-[#b0966a] font-bold text-sm mt-1">₹{item.unit_price}</p>
-                            <div className="flex items-center gap-3 mt-2">
-                              <button 
-                                onClick={() => updateQuantity(item.product_id, -1)}
-                                className="w-6 h-6 rounded-full bg-[#f7f3eb] flex items-center justify-center hover:bg-[#ece4d5]"
-                              >
-                                <Minus className="w-3 h-3" />
-                              </button>
-                              <span className="text-sm font-bold">{item.quantity}</span>
-                              <button 
-                                onClick={() => updateQuantity(item.product_id, 1)}
-                                className="w-6 h-6 rounded-full bg-[#f7f3eb] flex items-center justify-center hover:bg-[#ece4d5]"
-                              >
-                                <Plus className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-                          <button 
-                            onClick={() => updateQuantity(item.product_id, -item.quantity)}
-                            className="text-[#c8b594] hover:text-red-500"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-
-                {cart.length > 0 && (
-                  <div className="pt-6 border-t border-[#ece4d5] space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#8c7e6d]">Subtotal</span>
-                      <span className="text-2xl font-serif font-bold">₹{cartTotal}</span>
-                    </div>
-                    <Button 
-                      className="w-full bg-[#3a322b] hover:bg-[#4a3f35] h-14 rounded-2xl text-lg font-bold text-white"
-                      onClick={() => setIsCheckoutOpen(true)}
-                    >
-                      Checkout Now
-                    </Button>
-                  </div>
-                )}
-              </SheetContent>
-            </Sheet>
+            </div>
           </div>
-        </div>
 
         {/* Categories */}
-          <div className="w-full flex flex-wrap justify-center gap-4 md:gap-8">
+          <div className="w-full flex flex-wrap justify-center gap-4 md:gap-6 mt-2">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setCategory(cat.id)}
-                className={`text-sm font-medium transition-all px-4 py-2 rounded-full ${
+                className={`text-sm md:text-base font-serif transition-all px-6 py-1.5 rounded-full ${
                   category === cat.id 
                     ? "bg-[#3a322b] text-white" 
                     : "text-[#8c7e6d] hover:text-[#3a322b]"
@@ -694,17 +110,17 @@ export default function ShopHome() {
           </div>
 
           {/* Collection Title Section */}
-          <div className="w-full flex flex-col items-center mt-8 md:mt-12 mb-4">
-            <p className="text-[9px] md:text-[10px] tracking-[0.3em] md:tracking-[0.4em] text-[#8c7e6d] uppercase font-medium mb-2">
+          <div className="w-full flex flex-col items-center mt-16 md:mt-24 mb-6">
+            <p className="text-[10px] md:text-[12px] tracking-[0.4em] text-[#8c7e6d] uppercase font-medium mb-3">
               EST. WITH LOVE
             </p>
-            <h2 className="font-serif text-3xl md:text-5xl font-bold text-[#4a3f35] mb-4 md:mb-6">
+            <h2 className="font-serif text-5xl md:text-8xl font-bold text-[#3a322b] mb-8 md:mb-12">
               Our Collection
             </h2>
-            <div className="w-full flex items-center justify-center gap-3 md:gap-4">
-              <div className="h-[1px] bg-[#ece4d5] flex-grow max-w-[80px] md:max-w-[120px]" />
-              <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#b0966a] rotate-45" />
-              <div className="h-[1px] bg-[#ece4d5] flex-grow max-w-[80px] md:max-w-[120px]" />
+            <div className="w-full flex items-center justify-center gap-4 md:gap-6">
+              <div className="h-[1px] bg-[#ece4d5] flex-grow max-w-[150px] md:max-w-[250px]" />
+              <div className="w-2 h-2 md:w-3 md:h-3 bg-[#c8b594] rotate-45" />
+              <div className="h-[1px] bg-[#ece4d5] flex-grow max-w-[150px] md:max-w-[250px]" />
             </div>
           </div>
         </div>
@@ -740,28 +156,88 @@ export default function ShopHome() {
                   onClick={() => setSelectedProduct(product)}
                 >
                   <div className="bg-[#f7f3eb] rounded-[1.5rem] overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 border border-[#ece4d5]/50">
-                    <div className={`relative overflow-hidden bg-white ${aspectClass}`}>
-                      {product.image_url ? (
-                        <img 
-                          src={product.image_url} 
-                          alt={product.name} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[#c8b594]">
-                          <Package className="w-8 h-8 opacity-30" />
+                    <div className={`relative overflow-hidden bg-white ${aspectClass} group/image`}>
+                      <div id={`product-image-container-${product.id}`} className="flex w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                        {product.image_urls && product.image_urls.length > 0 ? (
+                          product.image_urls.map((url, idx) => (
+                            <div key={idx} className="w-full h-full flex-shrink-0 snap-center relative">
+                              <img 
+                                src={url} 
+                                alt={`${product.name} - ${idx + 1}`} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                          ))
+                        ) : product.image_url ? (
+                          <div className="w-full h-full flex-shrink-0 snap-center relative">
+                            <img 
+                              src={product.image_url} 
+                              alt={product.name} 
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                              referrerPolicy="no-referrer"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center text-[#c8b594]">
+                            <Package className="w-8 h-8 opacity-30" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Arrows */}
+                      {product.image_urls && product.image_urls.length > 1 && (
+                        <>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const container = document.getElementById(`product-image-container-${product.id}`);
+                              if (container) container.scrollBy({ left: -container.offsetWidth, behavior: 'smooth' });
+                            }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/80 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/image:opacity-100 transition-opacity z-10"
+                          >
+                            <ChevronLeft className="w-4 h-4 text-[#3a322b]" />
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const container = document.getElementById(`product-image-container-${product.id}`);
+                              if (container) container.scrollBy({ left: container.offsetWidth, behavior: 'smooth' });
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/80 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover/image:opacity-100 transition-opacity z-10"
+                          >
+                            <ChevronRight className="w-4 h-4 text-[#3a322b]" />
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* Dots indicator if multiple images */}
+                      {product.image_urls && product.image_urls.length > 1 && (
+                        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1 pointer-events-none z-10">
+                          {product.image_urls.map((_, idx) => (
+                            <div key={idx} className="w-1.5 h-1.5 rounded-full bg-white/80 backdrop-blur-sm shadow-sm" />
+                          ))}
                         </div>
                       )}
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          addToCart(product);
-                        }}
-                        className="absolute bottom-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-[#3a322b] opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
+
+                      <div className="absolute bottom-3 right-3 flex gap-2">
+                        <a 
+                          href={`https://wa.me/91XXXXXXXXXX?text=I'm interested in ${product.name}. Price: ₹${product.price}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-[#25D366] opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm"
+                        >
+                          <Phone className="w-4 h-4" />
+                        </a>
+                        <a 
+                          href={`https://www.instagram.com/direct/new/?text=I'm interested in ${product.name}. Price: ₹${product.price}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-[#E1306C] opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm"
+                        >
+                          <span className="font-bold text-xs">IG</span>
+                        </a>
+                      </div>
                     </div>
                     <div className="p-4 text-left">
                       <h3 className="font-serif text-sm font-bold text-[#4a3f35] leading-tight">
@@ -794,7 +270,6 @@ export default function ShopHome() {
           <div className="flex flex-wrap justify-center gap-8 text-sm font-medium text-[#8c7e6d]">
             <a href="#" className="hover:text-[#3a322b] transition-colors">Shop</a>
             <a href="#" className="hover:text-[#3a322b] transition-colors">About Us</a>
-            <a href="/track-order" className="hover:text-[#3a322b] transition-colors">Track Order</a>
             <a href="#" className="hover:text-[#3a322b] transition-colors">Contact</a>
           </div>
           
@@ -807,183 +282,217 @@ export default function ShopHome() {
 
       {/* Product Detail Modal */}
       <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
-        <DialogContent className="sm:max-w-2xl p-0 overflow-hidden rounded-[2rem] border-none bg-[#fdfbf7]">
-          <div className="flex flex-col md:flex-row h-full max-h-[90vh] md:max-h-[500px]">
-            {/* Left: Image */}
-            <div className="w-full md:w-5/12 h-64 md:h-auto relative bg-white">
-              {selectedProduct?.image_url ? (
-                <img 
-                  src={selectedProduct.image_url} 
-                  alt={selectedProduct.name} 
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-[#c8b594]">
-                  <Package className="w-16 h-16 opacity-20" />
+        <DialogContent className="max-w-4xl w-full h-full md:h-auto md:max-h-[90vh] p-0 overflow-hidden md:rounded-[2rem] border-none bg-[#fdfbf7] m-0 rounded-none">
+          <div className="flex flex-col h-full overflow-y-auto">
+            {/* Header inside modal */}
+            <div className="sticky top-0 z-20 bg-[#fdfbf7] border-b border-[#ece4d5] px-4 py-3 flex items-center justify-between">
+              <button 
+                onClick={() => setSelectedProduct(null)}
+                className="flex items-center gap-2 text-sm font-medium text-[#8c7e6d] hover:text-[#3a322b] transition-colors bg-[#f7f3eb] px-4 py-2 rounded-lg"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to Shop
+              </button>
+            </div>
+
+            {/* Image Section */}
+            <div className="w-full relative bg-[#fdfbf7] p-4">
+              <div className="relative rounded-2xl overflow-hidden group">
+                <div id="modal-image-container" className="flex w-full h-[50vh] md:h-[60vh] overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  {selectedProduct?.image_urls && selectedProduct.image_urls.length > 0 ? (
+                    selectedProduct.image_urls.map((url, idx) => (
+                      <div key={idx} className="w-full h-full flex-shrink-0 snap-center relative">
+                        <img 
+                          src={url} 
+                          alt={`${selectedProduct.name} - ${idx + 1}`} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
+                          {idx + 1} / {selectedProduct.image_urls?.length}
+                        </div>
+                      </div>
+                    ))
+                  ) : selectedProduct?.image_url ? (
+                    <div className="w-full h-full flex-shrink-0 snap-center relative">
+                      <img 
+                        src={selectedProduct.image_url} 
+                        alt={selectedProduct.name} 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
+                        1 / 1
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center text-[#c8b594] bg-white">
+                      <Package className="w-16 h-16 opacity-20" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Arrows */}
+                {selectedProduct?.image_urls && selectedProduct.image_urls.length > 1 && (
+                  <>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const container = document.getElementById('modal-image-container');
+                        if (container) container.scrollBy({ left: -container.offsetWidth, behavior: 'smooth' });
+                      }}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    >
+                      <ChevronLeft className="w-6 h-6 text-[#3a322b]" />
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const container = document.getElementById('modal-image-container');
+                        if (container) container.scrollBy({ left: container.offsetWidth, behavior: 'smooth' });
+                      }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    >
+                      <ChevronRight className="w-6 h-6 text-[#3a322b]" />
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Thumbnails */}
+              {selectedProduct?.image_urls && selectedProduct.image_urls.length > 1 && (
+                <div className="flex justify-center gap-2 mt-4">
+                  {selectedProduct.image_urls.map((url, idx) => (
+                    <button 
+                      key={idx}
+                      onClick={() => {
+                        const container = document.getElementById('modal-image-container');
+                        if (container) {
+                          container.scrollTo({ left: idx * container.offsetWidth, behavior: 'smooth' });
+                        }
+                      }}
+                      className="w-16 h-16 rounded-lg overflow-hidden border-2 border-transparent focus:border-[#c8b594] transition-colors"
+                    >
+                      <img src={url} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Right: Details */}
-            <div className="w-full md:w-7/12 p-6 md:p-8 flex flex-col relative">
-              <button 
-                onClick={() => setSelectedProduct(null)}
-                className="absolute top-4 right-4 w-8 h-8 bg-[#3a322b]/10 hover:bg-[#3a322b]/20 rounded-full flex items-center justify-center text-[#3a322b] transition-all z-10"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              <div className="flex-grow">
-                <p className="text-[9px] tracking-[0.3em] text-[#8c7e6d] uppercase font-bold mb-2">
-                  {selectedProduct?.category.replace("_", " ")}
-                </p>
-                <h2 className="font-serif text-2xl font-bold text-[#4a3f35] mb-2 leading-tight">
-                  {selectedProduct?.name}
-                </h2>
-                <p className="text-2xl font-bold text-[#b0966a] mb-4 font-display">
-                  ₹{selectedProduct?.price}
-                </p>
-
-                <div className="h-[1px] bg-[#ece4d5] w-full mb-4" />
-
-                <p className="text-[#4a3f35] text-sm leading-relaxed mb-4">
-                  {selectedProduct?.description}
-                </p>
-                
-                <p className="text-[#8c7e6d] text-xs font-medium">
-                  {selectedProduct?.stock} pieces available
-                </p>
-              </div>
-
-              <div className="mt-6">
-                <Button 
-                  onClick={() => {
-                    if (selectedProduct) {
-                      addToCart(selectedProduct);
-                      setSelectedProduct(null);
-                    }
-                  }}
-                  className="w-full bg-[#3a322b] hover:bg-[#4a3f35] h-12 rounded-full text-base font-bold text-white flex items-center justify-center gap-2 shadow-md transition-all active:scale-95"
-                >
-                  <ShoppingBag className="w-4 h-4" />
-                  Add to Bag — ₹{selectedProduct?.price}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Checkout Modal */}
-      <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-        <DialogContent className="sm:max-w-lg rounded-[2.5rem] bg-[#fdfbf7] border-[#ece4d5]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-serif font-bold text-[#4a3f35]">Checkout</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-6 py-4">
-            <div className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name" className="flex items-center gap-2 text-[#8c7e6d]">
-                  <User className="w-4 h-4" /> Name
-                </Label>
-                <Input 
-                  id="name" 
-                  placeholder="Your full name" 
-                  className="rounded-xl border-[#ece4d5] bg-white focus-visible:ring-[#b0966a]"
-                  value={customerInfo.name}
-                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone" className="flex items-center gap-2 text-[#8c7e6d]">
-                  <Phone className="w-4 h-4" /> Phone Number
-                </Label>
-                <Input 
-                  id="phone" 
-                  placeholder="Your phone number" 
-                  className="rounded-xl border-[#ece4d5] bg-white focus-visible:ring-[#b0966a]"
-                  value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="address" className="flex items-center gap-2 text-[#8c7e6d]">
-                  <MapPin className="w-4 h-4" /> Delivery Address
-                </Label>
-                {user && user.addresses && user.addresses.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {user.addresses.map((addr: Address, idx: number) => {
-                      const addrString = `${addr.flatNo}, ${addr.locality}, ${addr.city}, ${addr.state} - ${addr.pincode}`;
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setCustomerInfo(prev => ({ ...prev, address: addrString }))}
-                          className={`text-[10px] px-3 py-1 rounded-full border transition-all ${
-                            customerInfo.address === addrString 
-                              ? "bg-[#3a322b] text-white border-[#3a322b]" 
-                              : "bg-white text-[#8c7e6d] border-[#ece4d5] hover:border-[#b0966a]"
-                          }`}
-                        >
-                          {addr.name} ({addr.type})
-                        </button>
-                      );
-                    })}
-                  </div>
+            {/* Details Section */}
+            <div className="w-full p-6 md:p-8 flex flex-col">
+              <p className="text-[11px] tracking-[0.2em] text-[#c8b594] uppercase font-medium mb-3">
+                {selectedProduct?.category.replace("_", " ")}
+              </p>
+              <h2 className="font-serif text-4xl md:text-5xl font-bold text-[#3a322b] mb-4">
+                {selectedProduct?.name}
+              </h2>
+              
+              <div className="flex items-center gap-3 mb-8">
+                {(selectedProduct?.cost_price ?? 0) > (selectedProduct?.price ?? 0) && (
+                  <span className="text-2xl text-[#8c7e6d] line-through decoration-1">₹{selectedProduct?.cost_price}</span>
                 )}
-                <Input 
-                  id="address" 
-                  placeholder="Full delivery address" 
-                  className="rounded-xl border-[#ece4d5] bg-white focus-visible:ring-[#b0966a]"
-                  value={customerInfo.address}
-                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, address: e.target.value }))}
-                />
+                <span className="text-4xl font-bold text-[#d9774b]">₹{selectedProduct?.price}</span>
+                {(selectedProduct?.cost_price ?? 0) > (selectedProduct?.price ?? 0) && (
+                  <span className="bg-[#fdf3eb] text-[#d9774b] text-sm font-medium px-3 py-1 rounded-sm ml-2">
+                    {Math.round((((selectedProduct?.cost_price ?? 0) - (selectedProduct?.price ?? 0)) / (selectedProduct?.cost_price ?? 1)) * 100)}% OFF
+                  </span>
+                )}
               </div>
-            </div>
 
-            <div className="p-6 bg-[#f7f3eb] rounded-3xl space-y-3">
-              <div className="flex justify-between text-sm text-[#8c7e6d]">
-                <span>Items ({cart.length})</span>
-                <span className="font-bold text-[#4a3f35]">₹{cartTotal}</span>
+              <div className="border-t border-b border-[#ece4d5] py-6 mb-8 space-y-5">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[#8c7e6d] uppercase text-xs tracking-widest">Product Code</span>
+                  <span className="font-serif font-bold text-[#3a322b] text-base">{selectedProduct?.sku || '000'}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[#8c7e6d] uppercase text-xs tracking-widest">Category</span>
+                  <span className="font-serif font-bold text-[#3a322b] text-base capitalize">{selectedProduct?.category.replace("_", " ")}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[#8c7e6d] uppercase text-xs tracking-widest">Availability</span>
+                  <span className="font-serif font-bold text-[#3a322b] text-base">
+                    {selectedProduct?.stock && selectedProduct.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between text-sm text-[#8c7e6d]">
-                <span>Delivery</span>
-                <span className="text-green-600 font-bold">Free</span>
-              </div>
-              <div className="pt-3 border-t border-[#ece4d5] flex justify-between items-center">
-                <span className="font-bold text-[#4a3f35]">Total Amount</span>
-                <span className="text-3xl font-serif font-bold text-[#b0966a]">₹{cartTotal}</span>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3 p-4 border border-[#b0966a]/20 bg-[#b0966a]/5 rounded-2xl">
-              <CreditCard className="text-[#b0966a] w-6 h-6" />
-              <div>
-                <p className="font-bold text-sm text-[#4a3f35]">Payment Method: UPI</p>
-                <p className="text-xs text-[#8c7e6d]">Scan QR code on delivery or pay via link</p>
+              <div className="flex flex-col gap-4 mb-8">
+                <a 
+                  href={`https://wa.me/917304660232?text=${encodeURIComponent(`Product Name: ${selectedProduct?.name}\nPrice: ₹${selectedProduct?.price}\nProduct ID: ${selectedProduct?.sku || 'N/A'}\n\nPlease provide more details`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full h-14 bg-[#4ade80] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#22c55e] transition-all shadow-sm text-lg"
+                >
+                  <Phone className="w-5 h-5" />
+                  Buy via WhatsApp
+                </a>
+                <button 
+                  onClick={() => {
+                    const message = `Product Name: ${selectedProduct?.name}\nPrice: ₹${selectedProduct?.price}\nProduct ID: ${selectedProduct?.sku || 'N/A'}\n\nPlease provide more details`;
+                    navigator.clipboard.writeText(message).then(() => {
+                      toast.success("Product details copied! Paste them in the chat.");
+                      window.open('https://www.instagram.com/kalaa_.handmade?igsh=NHJuMmkwcXg2YXBu', '_blank');
+                    }).catch(() => {
+                      window.open('https://www.instagram.com/kalaa_.handmade?igsh=NHJuMmkwcXg2YXBu', '_blank');
+                    });
+                  }}
+                  className="w-full h-14 bg-gradient-to-r from-[#ff9a8b] to-[#ff6a88] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-sm text-lg"
+                >
+                  <span className="font-bold">DM on Instagram</span>
+                </button>
+              </div>
+
+              <div className="space-y-3 mb-10 text-sm text-[#8c7e6d]">
+                <p className="flex items-start gap-2">
+                  <span className="text-[#d9774b] mt-0.5">✦</span> 
+                  <span>Clicking "Buy" will open WhatsApp with your product details pre-filled.</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <span className="text-[#ec4899] mt-0.5">✦</span> 
+                  <span>Instagram: your product details are copied to clipboard — just paste them in the DM.</span>
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-serif text-xl font-bold text-[#3a322b] mb-3">Description</h3>
+                  <div className="text-sm text-[#4a3f35] space-y-2 leading-relaxed">
+                    {selectedProduct?.description.split('\n').map((line, i) => (
+                      <p key={i}>• {line}</p>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-serif text-xl font-bold text-[#3a322b] mb-3">Shipping Info</h3>
+                  <div className="space-y-3 text-sm text-[#4a3f35]">
+                    {selectedProduct?.shipping_info ? (
+                      <div className="flex items-start gap-3">
+                        <div className="mt-0.5 text-[#c8b594]"><Package className="w-4 h-4" /></div>
+                        <p>{selectedProduct.shipping_info}</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 text-[#c8b594]"><History className="w-4 h-4" /></div>
+                          <p>Each piece is made to order and takes 5-6 days to prepare.</p>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 text-[#c8b594]"><Package className="w-4 h-4" /></div>
+                          <p>Delivery takes 5-6 days after dispatch, depending on your location.</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-
-          <DialogFooter className="gap-3">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsCheckoutOpen(false)}
-              className="rounded-xl border-[#ece4d5] text-[#8c7e6d]"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleCheckout}
-              className="bg-[#3a322b] hover:bg-[#4a3f35] rounded-xl px-8 text-white"
-            >
-              Place Order
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }
