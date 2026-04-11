@@ -282,23 +282,22 @@ export default function ShopHome() {
 
       {/* Product Detail Modal */}
       <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
-        <DialogContent className="max-w-4xl w-full h-full md:h-auto md:max-h-[90vh] p-0 overflow-hidden md:rounded-[2rem] border-none bg-[#fdfbf7] m-0 rounded-none">
-          <div className="flex flex-col h-full overflow-y-auto">
-            {/* Header inside modal */}
-            <div className="sticky top-0 z-20 bg-[#fdfbf7] border-b border-[#ece4d5] px-4 py-3 flex items-center justify-between">
-              <button 
-                onClick={() => setSelectedProduct(null)}
-                className="flex items-center gap-2 text-sm font-medium text-[#8c7e6d] hover:text-[#3a322b] transition-colors bg-[#f7f3eb] px-4 py-2 rounded-lg"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Back to Shop
-              </button>
-            </div>
+        <DialogContent className="max-w-6xl w-full h-full md:h-[85vh] p-0 overflow-hidden md:rounded-[2.5rem] border-none bg-[#fdfbf7] m-0 rounded-none shadow-2xl">
+          <div className="flex flex-col md:flex-row h-full overflow-hidden">
+            {/* Left side: Images - Fixed on desktop, scrollable on mobile */}
+            <div className="w-full md:w-[55%] h-[50vh] md:h-full bg-white relative flex flex-col">
+              {/* Mobile Back Button */}
+              <div className="md:hidden absolute top-4 left-4 z-30">
+                <button 
+                  onClick={() => setSelectedProduct(null)}
+                  className="bg-white/90 backdrop-blur-md p-2 rounded-full shadow-lg text-[#3a322b]"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+              </div>
 
-            {/* Image Section */}
-            <div className="w-full relative bg-[#fdfbf7] p-4">
-              <div className="relative rounded-2xl overflow-hidden group">
-                <div id="modal-image-container" className="flex w-full h-[50vh] md:h-[60vh] overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="flex-1 relative overflow-hidden group">
+                <div id="modal-image-container" className="flex w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                   {selectedProduct?.image_urls && selectedProduct.image_urls.length > 0 ? (
                     selectedProduct.image_urls.map((url, idx) => (
                       <div key={idx} className="w-full h-full flex-shrink-0 snap-center relative">
@@ -308,9 +307,6 @@ export default function ShopHome() {
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
-                        <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
-                          {idx + 1} / {selectedProduct.image_urls?.length}
-                        </div>
                       </div>
                     ))
                   ) : selectedProduct?.image_url ? (
@@ -321,9 +317,6 @@ export default function ShopHome() {
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
                       />
-                      <div className="absolute top-4 right-4 bg-black/50 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
-                        1 / 1
-                      </div>
                     </div>
                   ) : (
                     <div className="w-full h-full flex-shrink-0 snap-center flex items-center justify-center text-[#c8b594] bg-white">
@@ -359,9 +352,9 @@ export default function ShopHome() {
                 )}
               </div>
 
-              {/* Thumbnails */}
+              {/* Thumbnails - Desktop only or small on mobile */}
               {selectedProduct?.image_urls && selectedProduct.image_urls.length > 1 && (
-                <div className="flex justify-center gap-2 mt-4">
+                <div className="p-4 bg-white border-t border-[#ece4d5] overflow-x-auto flex gap-2 scrollbar-hide">
                   {selectedProduct.image_urls.map((url, idx) => (
                     <button 
                       key={idx}
@@ -371,7 +364,7 @@ export default function ShopHome() {
                           container.scrollTo({ left: idx * container.offsetWidth, behavior: 'smooth' });
                         }
                       }}
-                      className="w-16 h-16 rounded-lg overflow-hidden border-2 border-transparent focus:border-[#c8b594] transition-colors"
+                      className="w-14 h-14 md:w-20 md:h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 border-transparent focus:border-[#c8b594] transition-colors"
                     >
                       <img src={url} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     </button>
@@ -380,112 +373,129 @@ export default function ShopHome() {
               )}
             </div>
 
-            {/* Details Section */}
-            <div className="w-full p-6 md:p-8 flex flex-col">
-              <p className="text-[11px] tracking-[0.2em] text-[#c8b594] uppercase font-medium mb-3">
-                {selectedProduct?.category.replace("_", " ")}
-              </p>
-              <h2 className="font-serif text-4xl md:text-5xl font-bold text-[#3a322b] mb-4">
-                {selectedProduct?.name}
-              </h2>
-              
-              <div className="flex items-center gap-3 mb-8">
-                {(selectedProduct?.cost_price ?? 0) > (selectedProduct?.price ?? 0) && (
-                  <span className="text-2xl text-[#8c7e6d] line-through decoration-1">₹{selectedProduct?.cost_price}</span>
-                )}
-                <span className="text-4xl font-bold text-[#d9774b]">₹{selectedProduct?.price}</span>
-                {(selectedProduct?.cost_price ?? 0) > (selectedProduct?.price ?? 0) && (
-                  <span className="bg-[#fdf3eb] text-[#d9774b] text-sm font-medium px-3 py-1 rounded-sm ml-2">
-                    {Math.round((((selectedProduct?.cost_price ?? 0) - (selectedProduct?.price ?? 0)) / (selectedProduct?.cost_price ?? 1)) * 100)}% OFF
-                  </span>
-                )}
-              </div>
-
-              <div className="border-t border-b border-[#ece4d5] py-6 mb-8 space-y-5">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-[#8c7e6d] uppercase text-xs tracking-widest">Product Code</span>
-                  <span className="font-serif font-bold text-[#3a322b] text-base">{selectedProduct?.sku || '000'}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-[#8c7e6d] uppercase text-xs tracking-widest">Category</span>
-                  <span className="font-serif font-bold text-[#3a322b] text-base capitalize">{selectedProduct?.category.replace("_", " ")}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-[#8c7e6d] uppercase text-xs tracking-widest">Availability</span>
-                  <span className="font-serif font-bold text-[#3a322b] text-base">
-                    {selectedProduct?.stock && selectedProduct.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4 mb-8">
-                <a 
-                  href={`https://wa.me/917304660232?text=${encodeURIComponent(`Product Name: ${selectedProduct?.name}\nPrice: ₹${selectedProduct?.price}\nProduct ID: ${selectedProduct?.sku || 'N/A'}\n\nPlease provide more details`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full h-14 bg-[#4ade80] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#22c55e] transition-all shadow-sm text-lg"
-                >
-                  <Phone className="w-5 h-5" />
-                  Buy via WhatsApp
-                </a>
+            {/* Right side: Details - Scrollable */}
+            <div className="w-full md:w-[45%] h-full overflow-y-auto bg-[#fdfbf7] flex flex-col">
+              {/* Desktop Back Button */}
+              <div className="hidden md:flex sticky top-0 z-20 bg-[#fdfbf7]/80 backdrop-blur-md px-8 py-6 border-b border-[#ece4d5] items-center justify-between">
                 <button 
-                  onClick={() => {
-                    const message = `Product Name: ${selectedProduct?.name}\nPrice: ₹${selectedProduct?.price}\nProduct ID: ${selectedProduct?.sku || 'N/A'}\n\nPlease provide more details`;
-                    navigator.clipboard.writeText(message).then(() => {
-                      toast.success("Product details copied! Paste them in the chat.");
-                      window.open('https://www.instagram.com/kalaa_.handmade?igsh=NHJuMmkwcXg2YXBu', '_blank');
-                    }).catch(() => {
-                      window.open('https://www.instagram.com/kalaa_.handmade?igsh=NHJuMmkwcXg2YXBu', '_blank');
-                    });
-                  }}
-                  className="w-full h-14 bg-gradient-to-r from-[#ff9a8b] to-[#ff6a88] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-sm text-lg"
+                  onClick={() => setSelectedProduct(null)}
+                  className="flex items-center gap-2 text-sm font-medium text-[#8c7e6d] hover:text-[#3a322b] transition-colors bg-[#f7f3eb] px-5 py-2.5 rounded-xl"
                 >
-                  <span className="font-bold">DM on Instagram</span>
+                  <ChevronLeft className="w-4 h-4" />
+                  Back to Shop
                 </button>
               </div>
 
-              <div className="space-y-3 mb-10 text-sm text-[#8c7e6d]">
-                <p className="flex items-start gap-2">
-                  <span className="text-[#d9774b] mt-0.5">✦</span> 
-                  <span>Clicking "Buy" will open WhatsApp with your product details pre-filled.</span>
+              <div className="p-6 md:p-10 flex flex-col flex-1">
+                <p className="text-[11px] tracking-[0.25em] text-[#c8b594] uppercase font-bold mb-4">
+                  {selectedProduct?.category.replace("_", " ")}
                 </p>
-                <p className="flex items-start gap-2">
-                  <span className="text-[#ec4899] mt-0.5">✦</span> 
-                  <span>Instagram: your product details are copied to clipboard — just paste them in the DM.</span>
-                </p>
-              </div>
+                <h2 className="font-serif text-3xl md:text-5xl font-bold text-[#3a322b] mb-6 leading-tight">
+                  {selectedProduct?.name}
+                </h2>
+                
+                <div className="flex items-center gap-4 mb-10">
+                  {(selectedProduct?.cost_price ?? 0) > (selectedProduct?.price ?? 0) && (
+                    <span className="text-2xl text-[#8c7e6d] line-through decoration-1 opacity-60">₹{selectedProduct?.cost_price}</span>
+                  )}
+                  <span className="text-4xl md:text-5xl font-bold text-[#d9774b]">₹{selectedProduct?.price}</span>
+                  {(selectedProduct?.cost_price ?? 0) > (selectedProduct?.price ?? 0) && (
+                    <span className="bg-[#fdf3eb] text-[#d9774b] text-sm font-bold px-4 py-1.5 rounded-full ml-2">
+                      {Math.round((((selectedProduct?.cost_price ?? 0) - (selectedProduct?.price ?? 0)) / (selectedProduct?.cost_price ?? 1)) * 100)}% OFF
+                    </span>
+                  )}
+                </div>
 
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-serif text-xl font-bold text-[#3a322b] mb-3">Description</h3>
-                  <div className="text-sm text-[#4a3f35] space-y-2 leading-relaxed">
-                    {selectedProduct?.description.split('\n').map((line, i) => (
-                      <p key={i}>• {line}</p>
-                    ))}
+                <div className="grid grid-cols-1 gap-6 mb-10 border-y border-[#ece4d5] py-8">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#8c7e6d] uppercase text-[10px] tracking-[0.2em] font-bold">Product ID</span>
+                    <span className="font-serif font-bold text-[#3a322b] text-lg">{selectedProduct?.sku || '000'}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#8c7e6d] uppercase text-[10px] tracking-[0.2em] font-bold">Category</span>
+                    <span className="font-serif font-bold text-[#3a322b] text-lg capitalize">{selectedProduct?.category.replace("_", " ")}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#8c7e6d] uppercase text-[10px] tracking-[0.2em] font-bold">Status</span>
+                    <span className={`font-serif font-bold text-lg ${selectedProduct?.stock && selectedProduct.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {selectedProduct?.stock && selectedProduct.stock > 0 ? 'Available' : 'Sold Out'}
+                    </span>
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="font-serif text-xl font-bold text-[#3a322b] mb-3">Shipping Info</h3>
-                  <div className="space-y-3 text-sm text-[#4a3f35]">
-                    {selectedProduct?.shipping_info ? (
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5 text-[#c8b594]"><Package className="w-4 h-4" /></div>
-                        <p>{selectedProduct.shipping_info}</p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-start gap-3">
-                          <div className="mt-0.5 text-[#c8b594]"><History className="w-4 h-4" /></div>
-                          <p>Each piece is made to order and takes 5-6 days to prepare.</p>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <div className="mt-0.5 text-[#c8b594]"><Package className="w-4 h-4" /></div>
-                          <p>Delivery takes 5-6 days after dispatch, depending on your location.</p>
-                        </div>
-                      </>
-                    )}
+                <div className="flex flex-col gap-4 mb-12">
+                  <a 
+                    href={`https://wa.me/917304660232?text=${encodeURIComponent(`Product Name: ${selectedProduct?.name}\nPrice: ₹${selectedProduct?.price}\nProduct ID: ${selectedProduct?.sku || 'N/A'}\n\nPlease provide more details`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full h-16 bg-[#25D366] text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-[#1eb954] transition-all shadow-lg text-lg transform hover:-translate-y-1 active:scale-95"
+                  >
+                    <Phone className="w-6 h-6" />
+                    Order on WhatsApp
+                  </a>
+                  <button 
+                    onClick={() => {
+                      const message = `Product Name: ${selectedProduct?.name}\nPrice: ₹${selectedProduct?.price}\nProduct ID: ${selectedProduct?.sku || 'N/A'}\n\nPlease provide more details`;
+                      navigator.clipboard.writeText(message).then(() => {
+                        toast.success("Details copied! Paste them in Instagram DM.");
+                        window.open('https://www.instagram.com/kalaa_.handmade?igsh=NHJuMmkwcXg2YXBu', '_blank');
+                      }).catch(() => {
+                        window.open('https://www.instagram.com/kalaa_.handmade?igsh=NHJuMmkwcXg2YXBu', '_blank');
+                      });
+                    }}
+                    className="w-full h-16 bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:opacity-95 transition-all shadow-lg text-lg transform hover:-translate-y-1 active:scale-95"
+                  >
+                    <span className="font-bold">DM on Instagram</span>
+                  </button>
+                </div>
+
+                <div className="space-y-10">
+                  <div>
+                    <h3 className="font-serif text-2xl font-bold text-[#3a322b] mb-4 flex items-center gap-2">
+                      <span className="w-8 h-[2px] bg-[#d9774b]"></span>
+                      Description
+                    </h3>
+                    <div className="text-base text-[#4a3f35] space-y-4 leading-relaxed pl-10">
+                      {selectedProduct?.description.split('\n').map((line, i) => (
+                        <p key={i} className="relative">
+                          <span className="absolute -left-6 text-[#d9774b]">✦</span>
+                          {line}
+                        </p>
+                      ))}
+                    </div>
                   </div>
+
+                  <div>
+                    <h3 className="font-serif text-2xl font-bold text-[#3a322b] mb-4 flex items-center gap-2">
+                      <span className="w-8 h-[2px] bg-[#d9774b]"></span>
+                      Shipping & Preparation
+                    </h3>
+                    <div className="space-y-5 text-base text-[#4a3f35] pl-10">
+                      {selectedProduct?.shipping_info ? (
+                        <div className="flex items-start gap-4">
+                          <div className="mt-1 text-[#d9774b]"><Package className="w-5 h-5" /></div>
+                          <p>{selectedProduct.shipping_info}</p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-start gap-4">
+                            <div className="mt-1 text-[#d9774b]"><History className="w-5 h-5" /></div>
+                            <p>Each piece is meticulously handcrafted to order, taking <span className="font-bold">5-6 days</span> for preparation.</p>
+                          </div>
+                          <div className="flex items-start gap-4">
+                            <div className="mt-1 text-[#d9774b]"><Package className="w-5 h-5" /></div>
+                            <p>Standard delivery takes <span className="font-bold">5-6 days</span> after dispatch, varying by your location.</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-12 pt-8 border-t border-[#ece4d5] text-center">
+                  <p className="text-xs text-[#8c7e6d] italic">
+                    Thank you for supporting artisanal craftsmanship.
+                  </p>
                 </div>
               </div>
             </div>
