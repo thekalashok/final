@@ -13,6 +13,7 @@ export default function Products() {
   const [products, setProducts] = useState<Product[]>(() => {
     return dataService.getInitialData("PRODUCTS");
   });
+  const [isLoading, setIsLoading] = useState(products.length === 0);
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
@@ -22,6 +23,7 @@ export default function Products() {
     // Subscribe to live updates
     const unsubscribe = dataService.subscribe("PRODUCTS", (newProducts) => {
       setProducts(newProducts);
+      setIsLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -111,7 +113,12 @@ export default function Products() {
         </Button>
       </div>
 
-      {filteredProducts.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-24 text-slate-400">
+          <div className="w-10 h-10 border-4 border-brand-500/20 border-t-brand-500 rounded-full animate-spin mb-4" />
+          <p className="text-lg font-medium">Loading products...</p>
+        </div>
+      ) : filteredProducts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-slate-400">
           <Package className="w-16 h-16 mb-4 opacity-10" />
           <p className="text-xl font-medium">No products found</p>

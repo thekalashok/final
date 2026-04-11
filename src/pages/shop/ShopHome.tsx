@@ -20,6 +20,7 @@ export default function ShopHome() {
     const initial = dataService.getInitialData("PRODUCTS");
     return initial.filter((p: any) => p.status === "active");
   });
+  const [isLoading, setIsLoading] = useState(products.length === 0);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [categories, setCategories] = useState<{ id: string; label: string }[]>(() => {
@@ -39,6 +40,7 @@ export default function ShopHome() {
   useEffect(() => {
     const unsubscribeProducts = dataService.subscribe("PRODUCTS", (newProducts) => {
       setProducts(newProducts.filter((p: any) => p.status === "active"));
+      setIsLoading(false);
     });
 
     const unsubscribeCategories = dataService.subscribe("CATEGORIES", (newCats) => {
@@ -122,7 +124,12 @@ export default function ShopHome() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 md:py-12">
-        {filteredProducts.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 text-[#c8b594]">
+            <div className="w-12 h-12 border-4 border-[#c8b594]/20 border-t-[#c8b594] rounded-full animate-spin mb-6" />
+            <p className="text-xl font-serif italic">Curating our collection...</p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-[#c8b594]">
             <Search className="w-16 h-16 mb-4 opacity-10" />
             <p className="text-xl font-medium">No products found</p>
@@ -216,7 +223,7 @@ export default function ShopHome() {
 
                       <div className="absolute bottom-3 right-3 flex gap-2">
                         <a 
-                          href={`https://wa.me/91XXXXXXXXXX?text=I'm interested in ${product.name}. Price: ₹${product.price}`}
+                          href={`https://wa.me/917304660232?text=I'm interested in ${product.name}. Price: ₹${product.price}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="w-8 h-8 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-[#25D366] opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow-sm"

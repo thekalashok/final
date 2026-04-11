@@ -54,5 +54,7 @@ async function startServer() {
   });
 }
 
-// Start the server
-startServer();
+// Start the server only if not in a serverless environment
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+  startServer();
+}
