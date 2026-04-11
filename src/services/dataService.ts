@@ -412,7 +412,7 @@ export const dataService = {
       
       // Send verification email
       const actionCodeSettings: ActionCodeSettings = {
-        url: 'https://ais-dev-uynkhm6qtvcfbvysyxzvae-683807016219.asia-east1.run.app/login',
+        url: `${window.location.origin}/admin/login`,
         handleCodeInApp: true,
       };
       await sendEmailVerification(firebaseUser, actionCodeSettings);
@@ -446,7 +446,7 @@ export const dataService = {
   sendVerification: async () => {
     if (auth.currentUser) {
       const actionCodeSettings: ActionCodeSettings = {
-        url: 'https://ais-dev-uynkhm6qtvcfbvysyxzvae-683807016219.asia-east1.run.app/login',
+        url: `${window.location.origin}/admin/login`,
         handleCodeInApp: true,
       };
       await sendEmailVerification(auth.currentUser, actionCodeSettings);
