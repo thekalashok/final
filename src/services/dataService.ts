@@ -202,7 +202,7 @@ export const dataService = {
       return [];
     }
     if (path === COLLECTIONS.CATEGORIES) {
-      return [{ name: "amigurumi" }, { name: "bags" }, { name: "clothing" }, { name: "accessories" }, { name: "home_decor" }, { name: "custom" }, { name: "other" }];
+      return ["amigurumi", "bags", "clothing", "accessories", "home_decor", "custom", "other"];
     }
     return [];
   },
@@ -546,7 +546,7 @@ export const dataService = {
       if (error.message.includes("Quota exceeded")) {
         console.warn(`Quota limit exceeded for ${path}.`);
         const currentCache = getCache(path);
-        return currentCache ? currentCache.data : FALLBACK_PRODUCTS;
+        return currentCache ? currentCache.data : [];
       }
       handleFirestoreError(error, OperationType.LIST, path);
       return [];
@@ -568,8 +568,7 @@ export const dataService = {
         }
         setCache(path, currentCache.data);
       } else {
-        // If no cache exists, initialize it with fallback products plus the new one
-        setCache(path, [...FALLBACK_PRODUCTS, product]);
+        setCache(path, [product]);
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `${COLLECTIONS.PRODUCTS}/${product.id}`);
@@ -579,6 +578,13 @@ export const dataService = {
   deleteProduct: async (id: string) => {
     try {
       await deleteDoc(doc(db, COLLECTIONS.PRODUCTS, id));
+      // Update cache
+      const path = COLLECTIONS.PRODUCTS;
+      const currentCache = getCache(path);
+      if (currentCache) {
+        const newData = currentCache.data.filter((p: Product) => p.id !== id);
+        setCache(path, newData);
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `${COLLECTIONS.PRODUCTS}/${id}`);
     }
@@ -772,6 +778,17 @@ export const dataService = {
     try {
       const cat = category.toLowerCase();
       await setDoc(doc(db, COLLECTIONS.CATEGORIES, cat), { name: cat });
+      // Update cache
+      const path = COLLECTIONS.CATEGORIES;
+      const currentCache = getCache(path);
+      if (currentCache) {
+        if (!currentCache.data.includes(cat)) {
+          currentCache.data.push(cat);
+          setCache(path, currentCache.data);
+        }
+      } else {
+        setCache(path, [cat]);
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `${COLLECTIONS.CATEGORIES}/${category}`);
     }
@@ -779,7 +796,15 @@ export const dataService = {
 
   deleteCategory: async (category: string) => {
     try {
-      await deleteDoc(doc(db, COLLECTIONS.CATEGORIES, category.toLowerCase()));
+      const cat = category.toLowerCase();
+      await deleteDoc(doc(db, COLLECTIONS.CATEGORIES, cat));
+      // Update cache
+      const path = COLLECTIONS.CATEGORIES;
+      const currentCache = getCache(path);
+      if (currentCache) {
+        const newData = currentCache.data.filter((c: string) => c !== cat);
+        setCache(path, newData);
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `${COLLECTIONS.CATEGORIES}/${category}`);
     }

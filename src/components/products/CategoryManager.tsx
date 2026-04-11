@@ -17,14 +17,18 @@ export default function CategoryManager({ open, onOpenChange, onUpdate }: Catego
   const [newCategory, setNewCategory] = useState("");
 
   useEffect(() => {
-    const loadCategories = async () => {
-      if (open) {
-        const cats = await dataService.getCategories();
-        setCategories(cats);
-      }
-    };
-    loadCategories();
-  }, [open]);
+    // Subscribe to live updates
+    const unsubscribe = dataService.subscribe("CATEGORIES", (newCategories) => {
+      // The subscribe method returns objects if it maps doc.data(), 
+      // but getCategories returns string[]. 
+      // Let's check how subscribe handles it.
+      // In dataService.ts, subscribe maps doc.data() which for categories is { name: string }
+      // So we need to map it to string[] here if it's objects.
+      const catNames = newCategories.map((c: any) => typeof c === 'string' ? c : c.name);
+      setCategories(catNames);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleAdd = async () => {
     if (!newCategory.trim()) return;
@@ -34,8 +38,6 @@ export default function CategoryManager({ open, onOpenChange, onUpdate }: Catego
       return;
     }
     await dataService.saveCategory(cat);
-    const updatedCats = await dataService.getCategories();
-    setCategories(updatedCats);
     setNewCategory("");
     onUpdate();
     toast.success("Category added");
@@ -43,8 +45,6 @@ export default function CategoryManager({ open, onOpenChange, onUpdate }: Catego
 
   const handleDelete = async (cat: string) => {
     await dataService.deleteCategory(cat);
-    const updatedCats = await dataService.getCategories();
-    setCategories(updatedCats);
     onUpdate();
     toast.success("Category removed");
   };

@@ -39,10 +39,16 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
   const [imageUrlInput, setImageUrlInput] = useState("");
 
   useEffect(() => {
+    // Subscribe to live updates for categories
+    const unsubscribe = dataService.subscribe("CATEGORIES", (newCategories) => {
+      const catNames = newCategories.map((c: any) => typeof c === 'string' ? c : c.name);
+      setCategories(catNames);
+    });
+
     if (open) {
-      dataService.getCategories().then(setCategories);
       setIsDeleting(false);
     }
+    
     if (product) {
       setFormData(product);
     } else {
@@ -58,6 +64,8 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
         status: "active",
       });
     }
+
+    return () => unsubscribe();
   }, [product, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
