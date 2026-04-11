@@ -71,12 +71,7 @@ export default function ShopHome() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col items-center gap-6 md:gap-8">
           <div className="w-full grid grid-cols-3 items-center">
             <div className="flex justify-start">
-              <img 
-                src="https://raw.githubusercontent.com/thekalashok/final/76c07d6c3acedc538115b5115882461db0e12846/public/40f1609d-e094-4df1-a6a2-5284d5f6220a.png" 
-                alt="KALAA Logo" 
-                className="h-20 md:h-32 w-auto object-contain"
-                referrerPolicy="no-referrer"
-              />
+              {/* Logo removed */}
             </div>
 
             <div className="flex flex-col items-center text-center">

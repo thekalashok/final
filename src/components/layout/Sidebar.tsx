@@ -24,11 +24,8 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="w-full lg:w-60 h-full bg-slate-900 text-white flex flex-col">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center">
-          <Scissors className="text-white w-6 h-6" />
-        </div>
-        <span className="font-display font-bold text-xl tracking-tight">KALAA</span>
+      <div className="p-6 flex items-center justify-center">
+        <span className="font-display font-bold text-2xl tracking-widest">KALAA</span>
       </div>
 
       <nav className="flex-grow px-4 space-y-2">
