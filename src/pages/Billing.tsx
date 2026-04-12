@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import CartItem from "../components/billing/CartItem";
+import CartItem from "../billing/CartItem";
 import { toast } from "sonner";
 
 export default function Billing() {

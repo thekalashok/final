@@ -6,7 +6,6 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Badge } from "../components/ui/badge";
-import CustomerDetailDrawer from "../components/customers/CustomerDetailDrawer";
 import { format } from "date-fns";
 
 export default function Customers() {
@@ -148,13 +147,6 @@ export default function Customers() {
           </Table>
         </div>
       </div>
-
-      <CustomerDetailDrawer
-        open={isDrawerOpen}
-        onOpenChange={setIsDrawerOpen}
-        customer={selectedCustomer}
-        orders={selectedCustomer ? getCustomerOrders(selectedCustomer.name) : []}
-      />
     </div>
   );
 }

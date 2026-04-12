@@ -10,6 +10,7 @@ import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
 import { storage } from "../../firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { dataService } from "../../services/dataService";
+import { toast } from "sonner";
 
 interface ProductFormDialogProps {
   open: boolean;
