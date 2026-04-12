@@ -63,7 +63,7 @@ export default function ShopHome() {
     };
   }, []);
 
-  const filteredProducts = products.filter(p => 
+  const filteredProducts = (products || []).filter(p => 
     (category === "all" || p.category.toLowerCase().replace(" ", "_") === category) &&
     p.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -94,7 +94,7 @@ export default function ShopHome() {
 
         {/* Categories */}
           <div className="w-full flex flex-wrap justify-center gap-4 md:gap-6 mt-2">
-            {categories.map((cat) => (
+            {(categories || []).map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setCategory(cat.id)}

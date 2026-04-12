@@ -15,13 +15,13 @@ export default function Dashboard() {
 
   useEffect(() => {
     const unsubscribeOrders = dataService.subscribe("ORDERS", (newOrders) => {
-      setOrders(newOrders);
+      setOrders(newOrders || []);
     });
     const unsubscribeProducts = dataService.subscribe("PRODUCTS", (newProducts) => {
-      setProducts(newProducts);
+      setProducts(newProducts || []);
     });
     const unsubscribeCustomers = dataService.subscribe("CUSTOMERS", (newCustomers) => {
-      setCustomers(newCustomers);
+      setCustomers(newCustomers || []);
     });
 
     return () => {

@@ -18,10 +18,10 @@ export default function Customers() {
 
   useEffect(() => {
     const unsubscribeCustomers = dataService.subscribe("CUSTOMERS", (newCustomers) => {
-      setCustomers(newCustomers);
+      setCustomers(newCustomers || []);
     });
     const unsubscribeOrders = dataService.subscribe("ORDERS", (newOrders) => {
-      setOrders(newOrders);
+      setOrders(newOrders || []);
     });
 
     return () => {

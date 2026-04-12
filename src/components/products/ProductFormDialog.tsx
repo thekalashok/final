@@ -6,8 +6,9 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Upload, X, Image as ImageIcon } from "lucide-react";
-
+import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { storage } from "../../firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { dataService } from "../../services/dataService";
 
 interface ProductFormDialogProps {
@@ -24,6 +25,7 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState<Partial<Product>>({
     name: "",
     description: "",
@@ -90,22 +92,26 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
     onSave(newProduct);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 500 * 1024) { // 500KB limit for base64 to stay under Firestore 1MB doc limit
-        alert("File is too large. Please choose an image under 500KB.");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      setIsUploading(true);
+      try {
+        const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        
         setFormData(prev => ({ 
           ...prev, 
-          image_url: prev.image_url ? prev.image_url : (reader.result as string),
-          image_urls: [...(prev.image_urls || []), reader.result as string]
+          image_url: prev.image_url ? prev.image_url : downloadURL,
+          image_urls: [...(prev.image_urls || []), downloadURL]
         }));
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        toast.error("Failed to upload image.");
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -292,6 +298,10 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             if (imageUrlInput) {
+                              if (imageUrlInput.startsWith('data:image')) {
+                                toast.error("Base64 images are not supported. Please upload the file instead.");
+                                return;
+                              }
                               setFormData(prev => ({
                                 ...prev,
                                 image_urls: [...(prev.image_urls || []), imageUrlInput],
@@ -316,11 +326,21 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
                       <Button
                         type="button"
                         variant="outline"
+                        disabled={isUploading}
                         onClick={() => fileInputRef.current?.click()}
                         className="h-12 w-full sm:w-auto rounded-2xl border-dashed border-2 border-slate-200 hover:border-brand-500 hover:bg-brand-50 transition-all px-6"
                       >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>

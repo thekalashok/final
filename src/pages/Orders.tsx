@@ -28,7 +28,7 @@ export default function Orders() {
   useEffect(() => {
     // Subscribe to live updates
     const unsubscribe = dataService.subscribe("ORDERS", (newOrders) => {
-      setOrders(newOrders.sort((a: Order, b: Order) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime()));
+      setOrders((newOrders || []).sort((a: Order, b: Order) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime()));
     });
     return () => unsubscribe();
   }, []);

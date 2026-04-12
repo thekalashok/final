@@ -37,13 +37,14 @@ export default function Products() {
     try {
       await dataService.saveProduct(product);
       setProducts(prev => {
-        const existingIndex = prev.findIndex(p => p.id === product.id);
+        const prevArray = prev || [];
+        const existingIndex = prevArray.findIndex(p => p.id === product.id);
         if (existingIndex >= 0) {
-          const newProducts = [...prev];
+          const newProducts = [...prevArray];
           newProducts[existingIndex] = product;
           return newProducts;
         }
-        return [...prev, product];
+        return [...prevArray, product];
       });
       setIsDialogOpen(false);
       setEditingProduct(null);
@@ -56,14 +57,14 @@ export default function Products() {
   const handleDelete = async (id: string) => {
     try {
       await dataService.deleteProduct(id);
-      setProducts(prev => prev.filter(p => p.id !== id));
+      setProducts(prev => (prev || []).filter(p => p.id !== id));
       toast.success("Product deleted successfully");
     } catch (error: any) {
       toast.error("Failed to delete product.");
     }
   };
 
-  const filteredProducts = products.filter(p => 
+  const filteredProducts = (products || []).filter(p => 
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.sku.toLowerCase().includes(search.toLowerCase())
   );
