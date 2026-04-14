@@ -97,7 +97,7 @@ export default function ShopHome() {
                 KALAA
               </h1>
               <p className="text-[8px] md:text-[10px] tracking-[0.2em] text-[#8c7e6d] uppercase mt-1 font-medium">
-                BY RAJO
+                HANDMADE
               </p>
             </div>
 
@@ -295,7 +295,7 @@ export default function ShopHome() {
               KALAA
             </h2>
             <p className="text-xs text-[#8c7e6d] tracking-widest uppercase">
-              BY RAJO
+              HANDMADE
             </p>
           </div>
           
