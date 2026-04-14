@@ -7,6 +7,7 @@ import Products from "./pages/Products";
 import Billing from "./pages/Billing";
 import Orders from "./pages/Orders";
 import Customers from "./pages/Customers";
+import MediaLibrary from "./pages/MediaLibrary";
 import AppLayout from "./components/layout/AppLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="billing" element={<Billing />} />
               <Route path="orders" element={<Orders />} />
               <Route path="customers" element={<Customers />} />
+              <Route path="media" element={<MediaLibrary />} />
             </Route>
           </Route>
 
