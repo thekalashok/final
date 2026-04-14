@@ -70,6 +70,7 @@ export default function ProductDetails() {
                 Kalaa
               </h1>
               <span className="text-[8px] tracking-[0.3em] text-[#8c7e6d] uppercase font-medium">
+                BY RAJO
               </span>
             </div>
           </div>
@@ -250,6 +251,7 @@ export default function ProductDetails() {
             KALAA
           </h2>
           <p className="text-xs text-[#8c7e6d] tracking-widest uppercase mb-8">
+            BY RAJO
           </p>
           <p className="text-xs text-[#8c7e6d]">
             &copy; 2026 KALAA. All rights reserved.
