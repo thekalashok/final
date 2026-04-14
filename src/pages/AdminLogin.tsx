@@ -48,7 +48,7 @@ export default function AdminLogin() {
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8c7e6d]" />
                 <input 
                   type="text"
-                  placeholder="kalaa"
+                  placeholder=""
                   className="w-full h-14 pl-12 pr-4 rounded-2xl border border-[#f5f0e8] bg-[#fdfbf7] focus:outline-none focus:ring-2 focus:ring-[#3a322b]/10 text-[#3a322b]"
                   id="admin-id"
                 />
