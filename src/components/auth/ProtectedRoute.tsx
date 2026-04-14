@@ -8,8 +8,16 @@ export default function ProtectedRoute() {
   useEffect(() => {
     const unsubscribe = dataService.onAuthChange((user) => {
       // Check for admin role from the user object
-      const isUserAdmin = user?.role === 'admin' || user?.email === "rajukumbhar2323@gmail.com";
-      setIsAdmin(isUserAdmin);
+      const isUserAdmin = user?.role === 'admin' || user?.email === "rajukumbhar2323@gmail.com" || user?.email === "admin@kalaa.com";
+      
+      if (isUserAdmin) {
+        localStorage.setItem("isAdminLoggedIn", "true");
+        setIsAdmin(true);
+      } else {
+        // Fallback to localStorage if Supabase is still loading or table is missing
+        const wasAdmin = localStorage.getItem("isAdminLoggedIn") === "true";
+        setIsAdmin(wasAdmin);
+      }
     });
     return () => unsubscribe();
   }, []);

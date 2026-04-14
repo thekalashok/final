@@ -7,8 +7,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
-import { storage } from "../../firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { supabase } from "../../supabase";
 import { dataService } from "../../services/dataService";
 import { toast } from "sonner";
 
@@ -27,6 +26,7 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
   const [categories, setCategories] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({
     name: "",
     description: "",
@@ -96,22 +96,55 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in to upload images.");
+        return;
+      }
+
       setIsUploading(true);
+      setUploadProgress(0);
+      
       try {
-        const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-        const snapshot = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(snapshot.ref);
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `products/${fileName}`;
+
+        const { data, error } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) throw error;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filePath);
         
-        setFormData(prev => ({ 
-          ...prev, 
-          image_url: prev.image_url ? prev.image_url : downloadURL,
-          image_urls: [...(prev.image_urls || []), downloadURL]
+        // Save metadata to database
+        await dataService.saveMediaMetadata({
+          name: file.name,
+          url: publicUrl,
+          type: file.type,
+          size: file.size
+        });
+
+        setFormData(prev => ({
+          ...prev,
+          image_urls: [...(prev.image_urls || []), publicUrl],
+          image_url: prev.image_url || publicUrl
         }));
-      } catch (error) {
-        console.error("Error uploading image:", error);
-        toast.error("Failed to upload image.");
+        
+        toast.success("Image uploaded successfully!");
+      } catch (error: any) {
+        console.error("Upload failed:", error);
+        toast.error(`Upload failed: ${error.message}. Make sure you have created a public bucket named 'product-images' in Supabase.`);
       } finally {
         setIsUploading(false);
+        setUploadProgress(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
       }
     }
   };
@@ -300,7 +333,7 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
                             e.preventDefault();
                             if (imageUrlInput) {
                               if (imageUrlInput.startsWith('data:image')) {
-                                toast.error("Base64 images are not supported. Please upload the file instead.");
+                                toast.error("Base64 images are not supported. Please paste a direct image URL.");
                                 return;
                               }
                               setFormData(prev => ({
@@ -334,7 +367,7 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
                         {isUploading ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Uploading...
+                            {uploadProgress !== null ? `Uploading ${Math.round(uploadProgress)}%` : "Uploading..."}
                           </>
                         ) : (
                           <>

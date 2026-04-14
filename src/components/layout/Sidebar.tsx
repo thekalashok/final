@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, ShoppingCart, Users, Receipt, ExternalLink, LogOut, Scissors } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, Users, Receipt, ExternalLink, LogOut, Scissors, Image as ImageIcon } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { dataService } from "../../services/dataService";
@@ -7,6 +7,7 @@ import { dataService } from "../../services/dataService";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
   { icon: Package, label: "Products", path: "/admin/products" },
+  { icon: ImageIcon, label: "Media Library", path: "/admin/media" },
   { icon: Receipt, label: "Billing", path: "/admin/billing" },
   { icon: ShoppingCart, label: "Orders", path: "/admin/orders" },
   { icon: Users, label: "Customers", path: "/admin/customers" },

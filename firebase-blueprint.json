@@ -1,8 +1,31 @@
 {
   "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A product in the store",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "cost_price": { "type": "number" },
+        "stock": { "type": "number" },
+        "image_url": { "type": "string" },
+        "image_urls": { "type": "array", "items": { "type": "string" } },
+        "sku": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive", "out_of_stock"] },
+        "shipping_info": { "type": "string" },
+        "created_date": { "type": "string", "format": "date-time" },
+        "updated_date": { "type": "string", "format": "date-time" },
+        "created_by": { "type": "string" }
+      },
+      "required": ["id", "name", "price", "category"]
+    },
     "User": {
       "title": "User",
-      "description": "Application user profile",
+      "description": "A user of the application",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -11,45 +34,65 @@
         "role": { "type": "string", "enum": ["admin", "user"] },
         "created_date": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "name", "email", "created_date"]
+      "required": ["id", "email"]
     },
-    "Product": {
-      "title": "Product",
-      "description": "Handcrafted product item",
+    "Order": {
+      "title": "Order",
+      "description": "A customer order",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "name": { "type": "string" },
-        "description": { "type": "string" },
-        "category": { "type": "string" },
-        "price": { "type": "number" },
-        "status": { "type": "string", "enum": ["active", "inactive", "out_of_stock"] },
-        "image_url": { "type": "string" }
+        "order_number": { "type": "string" },
+        "customer_phone": { "type": "string" },
+        "status": { "type": "string" }
       },
-      "required": ["id", "name", "price", "category", "status"]
+      "required": ["id", "order_number"]
     },
     "Category": {
       "title": "Category",
-      "description": "Product category",
+      "description": "A product category",
       "type": "object",
       "properties": {
         "name": { "type": "string" }
       },
       "required": ["name"]
+    },
+    "Media": {
+      "title": "Media",
+      "description": "A file stored in Firebase Storage",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "type": { "type": "string" },
+        "size": { "type": "number" },
+        "created_date": { "type": "string", "format": "date-time" },
+        "created_by": { "type": "string" }
+      },
+      "required": ["id", "name", "url", "type"]
     }
   },
   "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Store products"
+    },
     "/users/{userId}": {
       "schema": "User",
       "description": "User profiles"
     },
-    "/products/{productId}": {
-      "schema": "Product",
-      "description": "Product catalog"
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders"
     },
     "/categories/{categoryId}": {
       "schema": "Category",
       "description": "Product categories"
+    },
+    "/media/{mediaId}": {
+      "schema": "Media",
+      "description": "File metadata"
     }
   }
 }

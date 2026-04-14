@@ -2,6 +2,10 @@ import express from "express";
 import path from "path";
 import twilio from "twilio";
 import dotenv from "dotenv";
+import multer from "multer";
+import admin from "firebase-admin";
+import { Bucket } from "@google-cloud/storage";
+import fs from "fs";
 
 dotenv.config();
 
@@ -10,12 +14,19 @@ const app = express();
 app.use(express.json());
 const PORT = 3000;
 
-const COLLECTIONS = {
-  OTPS: "otps_internal", // Using a separate collection for internal OTP storage
-};
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+});
 
-// Router for API routes to handle Netlify/Vercel function pathing
 const router = express.Router();
+
+router.post("/upload", upload.single("file"), async (req, res) => {
+  // Server-side upload is currently disabled in favor of client-side Supabase upload
+  res.status(501).json({ error: "Server-side upload is disabled. Use client-side Supabase upload." });
+});
 
 router.get("/health", (req, res) => {
   res.json({ 

@@ -21,7 +21,10 @@ export default function ShopHome() {
     return initial.filter((p: any) => p.status === "active");
   });
   const [isLoading, setIsLoading] = useState(products.length === 0);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("search") || "";
+  });
   const [category, setCategory] = useState<string>("all");
   const [categories, setCategories] = useState<{ id: string; label: string }[]>(() => {
     const initial = dataService.getInitialData("CATEGORIES") || [];
@@ -77,6 +80,16 @@ export default function ShopHome() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex flex-col items-center gap-6 md:gap-8">
           <div className="w-full grid grid-cols-3 items-center">
             <div className="flex justify-start">
+              <div className="relative hidden md:block w-full max-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c7e6d]" />
+                <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full h-9 pl-9 pr-4 rounded-full bg-[#f7f3eb] border-none focus:ring-1 focus:ring-[#c8b594] text-xs text-[#3a322b]"
+                />
+              </div>
             </div>
 
             <div className="flex flex-col items-center text-center">
@@ -84,11 +97,25 @@ export default function ShopHome() {
                 KALAA
               </h1>
               <p className="text-[8px] md:text-[10px] tracking-[0.2em] text-[#8c7e6d] uppercase mt-1 font-medium">
-                Handcrafted with Love
+                BY RAJO
               </p>
             </div>
 
             <div className="flex items-center justify-end gap-2 md:gap-3">
+            </div>
+          </div>
+
+          {/* Mobile Search */}
+          <div className="w-full md:hidden px-2">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c7e6d]" />
+              <input 
+                type="text" 
+                placeholder="Search products..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full h-12 pl-12 pr-4 rounded-2xl bg-[#f7f3eb] border-none focus:ring-1 focus:ring-[#c8b594] text-sm text-[#3a322b]"
+              />
             </div>
           </div>
 
@@ -158,7 +185,7 @@ export default function ShopHome() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="break-inside-avoid group cursor-pointer"
-                  onClick={() => setSelectedProduct(product)}
+                  onClick={() => navigate(`/product/${product.id}`)}
                 >
                   <div className="bg-[#f7f3eb] rounded-[1.5rem] overflow-hidden transition-all hover:shadow-xl hover:-translate-y-1 border border-[#ece4d5]/50">
                     <div className={`relative overflow-hidden bg-white ${aspectClass} group/image`}>
@@ -268,7 +295,7 @@ export default function ShopHome() {
               KALAA
             </h2>
             <p className="text-xs text-[#8c7e6d] tracking-widest uppercase">
-              Handcrafted with Love
+              BY RAJO
             </p>
           </div>
           

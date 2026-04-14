@@ -1,799 +1,341 @@
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  setDoc, 
-  addDoc, 
-  deleteDoc, 
-  onSnapshot, 
-  query, 
-  where, 
-  orderBy, 
-  Timestamp,
-  getDocFromServer
-} from "firebase/firestore";
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithCustomToken,
-  sendEmailVerification,
-  ActionCodeSettings,
-  User as FirebaseUser
-} from "firebase/auth";
-import { db, auth } from "../firebase";
+import { supabase } from "../supabase";
 import { Product, Customer, Order, User } from "../types";
 
-const googleProvider = new GoogleAuthProvider();
-
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId: string | undefined;
-    email: string | null | undefined;
-    emailVerified: boolean | undefined;
-    isAnonymous: boolean | undefined;
-    tenantId: string | null | undefined;
-    providerInfo: {
-      providerId: string;
-      displayName: string | null;
-      email: string | null;
-      photoUrl: string | null;
-    }[];
-  }
-}
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errorMessage = error instanceof Error ? error.message : String(error);
-  
-  if (errorMessage.includes("INTERNAL ASSERTION FAILED") || errorMessage.includes("Unexpected state")) {
-    console.error("Firebase Internal Error. Ignoring to prevent crash.", errorMessage);
-    return;
-  }
-
-  const errInfo: FirestoreErrorInfo = {
-    error: errorMessage,
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
-        providerId: provider.providerId,
-        displayName: provider.displayName,
-        email: provider.email,
-        photoUrl: provider.photoURL
-      })) || []
-    },
-    operationType,
-    path
-  }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  
-  // Don't throw for LIST operations (like onSnapshot) to prevent app crashes
-  if (operationType !== OperationType.LIST) {
-    throw new Error(JSON.stringify(errInfo));
-  }
-}
-
-const COLLECTIONS = {
+const TABLES = {
   PRODUCTS: "products",
   CUSTOMERS: "customers",
   ORDERS: "orders",
   CATEGORIES: "categories",
   USERS: "users",
+  MEDIA: "media",
 };
 
 type Listener = (data: any) => void;
 
-// Simple cache using memory to persist during session
-const memoryCache: Record<string, any> = {};
-
-const getCache = (path: string) => {
-  return memoryCache[path] || null;
-};
-
-const setCache = (path: string, data: any) => {
-  memoryCache[path] = data;
-};
-
-const FALLBACK_PRODUCTS: Product[] = [
-  {
-    id: "fallback-1",
-    name: "Handcrafted Amigurumi Bear",
-    description: "A cute, soft, and cuddly handcrafted amigurumi bear.",
-    price: 499,
-    cost_price: 250,
-    category: "amigurumi",
-    image_url: "https://picsum.photos/seed/amigurumi/400/400",
-    stock: 10,
-    sku: "FB-AMI-001",
-    status: "active",
-    created_date: new Date().toISOString(),
-    updated_date: new Date().toISOString(),
-    created_by: "system"
-  },
-  {
-    id: "fallback-2",
-    name: "Woven Tote Bag",
-    description: "A stylish and durable woven tote bag for everyday use.",
-    price: 899,
-    cost_price: 450,
-    category: "bags",
-    image_url: "https://picsum.photos/seed/wovenbag/400/400",
-    stock: 5,
-    sku: "FB-BAG-001",
-    status: "active",
-    created_date: new Date().toISOString(),
-    updated_date: new Date().toISOString(),
-    created_by: "system"
-  },
-  {
-    id: "fallback-3",
-    name: "Embroidered Scarf",
-    description: "A beautiful hand-embroidered scarf.",
-    price: 350,
-    cost_price: 150,
-    category: "accessories",
-    image_url: "https://picsum.photos/seed/scarf/400/400",
-    stock: 15,
-    sku: "FB-ACC-001",
-    status: "active",
-    created_date: new Date().toISOString(),
-    updated_date: new Date().toISOString(),
-    created_by: "system"
-  },
-  {
-    id: "fallback-4",
-    name: "Ceramic Vase",
-    description: "A minimalist ceramic vase for your home.",
-    price: 1200,
-    cost_price: 600,
-    category: "home_decor",
-    image_url: "https://picsum.photos/seed/vase/400/400",
-    stock: 3,
-    sku: "FB-HOM-001",
-    status: "active",
-    created_date: new Date().toISOString(),
-    updated_date: new Date().toISOString(),
-    created_by: "system"
-  }
-];
-
 export const dataService = {
-  getInitialData: (key: keyof typeof COLLECTIONS) => {
-    const path = COLLECTIONS[key];
-    const cachedData = getCache(path);
-    if (cachedData) {
-      return cachedData;
-    }
-    if (path === COLLECTIONS.PRODUCTS) {
-      return [];
-    }
-    if (path === COLLECTIONS.CATEGORIES) {
-      return ["amigurumi", "bags", "clothing", "accessories", "home_decor", "custom", "other"];
-    }
+  getInitialData: (key: keyof typeof TABLES) => {
     return [];
   },
-  // Subscription
-  subscribe: (key: keyof typeof COLLECTIONS, callback: Listener) => {
-    const path = COLLECTIONS[key];
+
+  subscribe: (key: keyof typeof TABLES, callback: Listener) => {
+    const table = TABLES[key];
     
-    // Check cache first for immediate UI update
-    const cachedData = getCache(path);
-    if (cachedData) {
-      callback(cachedData);
-    }
-
-    let unsubscribe: () => void = () => {};
-    let isPolled = false;
-    let pollInterval: any = null;
-
-    const startPolling = () => {
-      if (isPolled) return;
-      isPolled = true;
-      console.log(`Falling back to polling for ${path}`);
-      pollInterval = setInterval(async () => {
-        try {
-          const snapshot = await getDocs(query(collection(db, path)));
-          const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-          setCache(path, data);
-          callback(data);
-        } catch (e) {
-          console.error(`Poll failed for ${path}`, e);
-        }
-      }, 30000);
-    };
-
-    try {
-      console.log(`📡 Connecting to Cloud Firestore for: ${path}`);
-      const q = query(collection(db, path));
-      unsubscribe = onSnapshot(q, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        console.log(`✅ Real-time update received for ${path}: ${data.length} items`);
-        // Update cache
-        setCache(path, data);
+    // Initial fetch
+    supabase.from(table).select('*').then(({ data, error }) => {
+      if (!error && data) {
         callback(data);
-      }, (error) => {
-        const errorMessage = error.message || String(error);
-        
-        // Handle internal errors by falling back to polling
-        if (errorMessage.includes("INTERNAL ASSERTION FAILED") || errorMessage.includes("Unexpected state")) {
-          console.error(`Firestore Internal Error in onSnapshot for ${path}. Falling back to polling.`, errorMessage);
-          unsubscribe();
-          startPolling();
-          return;
-        }
+      }
+    });
 
-        // If quota exceeded, try to use cached data if available
-        if (errorMessage.includes("Quota exceeded")) {
-          console.warn(`Quota limit exceeded for ${path}.`);
-          const currentCache = getCache(path);
-          if (currentCache) {
-            callback(currentCache);
-          } else {
-            if (path === COLLECTIONS.CATEGORIES) {
-              callback(["amigurumi", "bags", "clothing", "accessories", "home_decor", "custom", "other"]);
-            } else if (path === COLLECTIONS.PRODUCTS) {
-              callback([]);
-            } else {
-              callback([]);
-            }
-          }
-          return;
+    // Subscribe to changes with a unique channel name to avoid conflicts
+    const channelId = `public:${table}:${Math.random().toString(36).substring(2, 9)}`;
+    const channel = supabase
+      .channel(channelId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: table }, async () => {
+        const { data, error } = await supabase.from(table).select('*');
+        if (!error && data) {
+          callback(data);
         }
-        handleFirestoreError(error, OperationType.LIST, path);
-      });
-    } catch (e) {
-      console.error(`Failed to start onSnapshot for ${path}. Falling back to polling.`, e);
-      startPolling();
-    }
+      })
+      .subscribe();
 
     return () => {
-      try {
-        unsubscribe();
-      } catch (e) {
-        console.error(`Error unsubscribing from ${path}:`, e);
-      }
-      if (pollInterval) clearInterval(pollInterval);
+      supabase.removeChannel(channel);
     };
   },
 
   // Auth & Users
-  getCurrentUser: (): User | null => {
-    const user = auth.currentUser;
+  getCurrentUser: async (): Promise<User | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
+
+    const { data: profile } = await supabase
+      .from(TABLES.USERS)
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (profile) return profile as User;
+
     return {
-      id: user.uid,
-      name: user.displayName || user.email?.split('@')[0] || user.uid,
+      id: user.id,
+      name: user.user_metadata?.full_name || user.email?.split('@')[0] || user.id,
       email: user.email || "",
-      mobile: user.phoneNumber || "",
       addresses: [],
-      created_date: new Date().toISOString(),
-      emailVerified: user.emailVerified
+      role: 'user',
+      created_date: user.created_at,
+      emailVerified: !!user.email_confirmed_at
     };
   },
 
   login: async (email: string, password: string): Promise<User | null> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
+      const { data: profile, error: profileError } = await supabase
+        .from(TABLES.USERS)
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
       
-      try {
-        const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          return {
-            ...data,
-            addresses: data.addresses || [],
-            emailVerified: firebaseUser.emailVerified
-          } as User;
-        } else {
-          const isAdmin = firebaseUser.email === "rajukumbhar2323@gmail.com" || firebaseUser.email === "admin@kalaa.com";
-          const newUser: User = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || "",
-            email: firebaseUser.email || "",
-            addresses: [],
-            role: isAdmin ? 'admin' : 'user',
-            created_date: new Date().toISOString(),
-            emailVerified: firebaseUser.emailVerified
-          };
-          await setDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), newUser);
-          return newUser;
-        }
-      } catch (firestoreError: any) {
-        if (firestoreError.message?.includes("Quota exceeded")) {
-          console.warn("Quota exceeded during login. Returning fallback user object.");
-          const isAdmin = firebaseUser.email === "rajukumbhar2323@gmail.com" || firebaseUser.email === "admin@kalaa.com";
-          return {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || "",
-            email: firebaseUser.email || "",
-            addresses: [],
-            role: isAdmin ? 'admin' : 'user',
-            created_date: new Date().toISOString(),
-            emailVerified: firebaseUser.emailVerified
-          };
-        }
-        throw firestoreError;
-      }
-    } catch (error: any) {
-      console.error("Login error:", error);
-      throw error;
+      if (profile) return profile as User;
+    } catch (e) {
+      console.warn("Profile fetch failed, likely table doesn't exist yet:", e);
     }
+      
+    // Fallback to basic user info if profile table is missing or empty
+    return {
+      id: data.user.id,
+      name: data.user.email?.split('@')[0] || "Admin",
+      email: data.user.email || "",
+      addresses: [],
+      role: (data.user.email === "rajukumbhar2323@gmail.com" || data.user.email === "admin@kalaa.com") ? 'admin' : 'user',
+      created_date: data.user.created_at,
+      emailVerified: !!data.user.email_confirmed_at
+    };
   },
 
-  loginWithGoogle: async (): Promise<User | null> => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const firebaseUser = result.user;
-      
-      try {
-        const userDocRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          return {
-            ...data,
-            addresses: data.addresses || [],
-            emailVerified: firebaseUser.emailVerified
-          } as User;
-        } else {
-          const isAdmin = firebaseUser.email === "rajukumbhar2323@gmail.com" || firebaseUser.email === "admin@kalaa.com";
-          const newUser: User = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || "",
-            email: firebaseUser.email || "",
-            addresses: [],
-            role: isAdmin ? 'admin' : 'user',
-            created_date: new Date().toISOString(),
-            emailVerified: firebaseUser.emailVerified
-          };
-          await setDoc(userDocRef, newUser);
-          return newUser;
-        }
-      } catch (firestoreError: any) {
-        if (firestoreError.message?.includes("Quota exceeded")) {
-          console.warn("Quota exceeded during Google login. Returning fallback user object.");
-          const isAdmin = firebaseUser.email === "rajukumbhar2323@gmail.com" || firebaseUser.email === "admin@kalaa.com";
-          return {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || "",
-            email: firebaseUser.email || "",
-            addresses: [],
-            role: isAdmin ? 'admin' : 'user',
-            created_date: new Date().toISOString(),
-            emailVerified: firebaseUser.emailVerified
-          };
-        }
-        throw firestoreError;
+  loginWithGoogle: async (): Promise<void> => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin
       }
-    } catch (error: any) {
-      console.error("Google login error:", error);
-      throw error;
-    }
+    });
+    if (error) throw error;
   },
 
   register: async (userData: Partial<User> & { password?: string }): Promise<User> => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, userData.email || "", userData.password || "");
-      const firebaseUser = userCredential.user;
-      
-      // Send verification email
-      const actionCodeSettings: ActionCodeSettings = {
-        url: `${window.location.origin}/admin/login`,
-        handleCodeInApp: true,
-      };
-      await sendEmailVerification(firebaseUser, actionCodeSettings);
-      
-      const isAdmin = userData.email === "rajukumbhar2323@gmail.com" || userData.email === "admin@kalaa.com";
-      const newUser: User = {
-        id: firebaseUser.uid,
-        name: userData.name || "",
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email || "",
-        age: userData.age,
-        mobile: userData.mobile,
-        addresses: userData.addresses || [],
-        role: isAdmin ? 'admin' : 'user',
-        created_date: new Date().toISOString(),
-        emailVerified: false
-      };
-      
-      await setDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), newUser);
-      return newUser;
-    } catch (error: any) {
-      if (error.code === 'auth/email-already-in-use') {
-        throw new Error("This email is already registered. Please login instead.");
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email || "",
+      password: userData.password || "",
+      options: {
+        data: {
+          full_name: userData.name
+        }
       }
-      handleFirestoreError(error, OperationType.CREATE, COLLECTIONS.USERS);
-      throw error;
-    }
-  },
+    });
+    if (error) throw error;
+    if (!data.user) throw new Error("Registration failed");
 
-  sendVerification: async () => {
-    if (auth.currentUser) {
-      const actionCodeSettings: ActionCodeSettings = {
-        url: `${window.location.origin}/admin/login`,
-        handleCodeInApp: true,
-      };
-      await sendEmailVerification(auth.currentUser, actionCodeSettings);
-    }
-  },
+    const isAdmin = userData.email === "rajukumbhar2323@gmail.com" || userData.email === "admin@kalaa.com";
+    const newUser: User = {
+      id: data.user.id,
+      name: userData.name || "",
+      email: userData.email || "",
+      addresses: userData.addresses || [],
+      role: isAdmin ? 'admin' : 'user',
+      created_date: new Date().toISOString(),
+      emailVerified: false
+    };
+    
+    const { error: profileError } = await supabase.from(TABLES.USERS).insert(newUser);
+    if (profileError) throw profileError;
 
-  reloadUser: async (): Promise<User | null> => {
-    if (auth.currentUser) {
-      await auth.currentUser.reload();
-      const firebaseUser = auth.currentUser;
-      const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        return {
-          ...data,
-          addresses: data.addresses || [],
-          emailVerified: firebaseUser.emailVerified
-        } as User;
-      }
-    }
-    return null;
+    return newUser;
   },
 
   logout: async () => {
-    await signOut(auth);
+    await supabase.auth.signOut();
   },
 
   onAuthChange: (callback: (user: User | null) => void) => {
-    return onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
         try {
-          const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            callback({
-              ...data,
-              addresses: data.addresses || [],
-              emailVerified: firebaseUser.emailVerified
-            } as User);
-          } else {
-            const isAdmin = firebaseUser.email === "rajukumbhar2323@gmail.com" || firebaseUser.email === "admin@kalaa.com";
-            callback({
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || "",
-              email: firebaseUser.email || "",
-              addresses: [],
-              role: isAdmin ? 'admin' : 'user',
-              created_date: new Date().toISOString(),
-              emailVerified: firebaseUser.emailVerified
-            });
+          const { data: profile } = await supabase
+            .from(TABLES.USERS)
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            callback(profile as User);
+            return;
           }
-        } catch (error: any) {
-          if (error.message?.includes("Quota exceeded")) {
-            console.warn("Quota exceeded during auth state change. Returning fallback user object.");
-            const isAdmin = firebaseUser.email === "rajukumbhar2323@gmail.com" || firebaseUser.email === "admin@kalaa.com";
-            callback({
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || "",
-              email: firebaseUser.email || "",
-              addresses: [],
-              role: isAdmin ? 'admin' : 'user',
-              created_date: new Date().toISOString(),
-              emailVerified: firebaseUser.emailVerified
-            });
-          } else {
-            console.error("Auth state change error:", error);
-            callback(null);
-          }
+        } catch (e) {
+          console.warn("Auth change profile fetch failed:", e);
         }
+
+        // Create profile or fallback
+        const isAdmin = session.user.email === "rajukumbhar2323@gmail.com" || session.user.email === "admin@kalaa.com";
+        const newUser: User = {
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || "",
+          email: session.user.email || "",
+          addresses: [],
+          role: isAdmin ? 'admin' : 'user',
+          created_date: new Date().toISOString(),
+          emailVerified: !!session.user.email_confirmed_at
+        };
+        
+        try {
+          await supabase.from(TABLES.USERS).insert(newUser);
+        } catch (e) {
+          console.error("Could not save profile to table, but allowing login:", e);
+        }
+        
+        callback(newUser);
       } else {
         callback(null);
       }
     });
+
+    return () => subscription.unsubscribe();
   },
 
   updateUser: async (updatedUser: User) => {
-    try {
-      await setDoc(doc(db, COLLECTIONS.USERS, updatedUser.id), updatedUser, { merge: true });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `${COLLECTIONS.USERS}/${updatedUser.id}`);
-    }
+    const { error } = await supabase
+      .from(TABLES.USERS)
+      .update(updatedUser)
+      .eq('id', updatedUser.id);
+    if (error) throw error;
   },
 
   // Products
   getProducts: async (): Promise<Product[]> => {
-    const path = COLLECTIONS.PRODUCTS;
-    const cachedData = getCache(path);
-    if (cachedData) {
-      return cachedData;
-    }
-    try {
-      const snapshot = await getDocs(collection(db, path));
-      const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Product));
-      setCache(path, data);
-      return data;
-    } catch (error: any) {
-      if (error.message.includes("Quota exceeded")) {
-        console.warn(`Quota limit exceeded for ${path}.`);
-        const currentCache = getCache(path);
-        return currentCache || [];
-      }
-      handleFirestoreError(error, OperationType.LIST, path);
-      return [];
-    }
+    const { data, error } = await supabase.from(TABLES.PRODUCTS).select('*');
+    if (error) throw error;
+    return data as Product[];
   },
 
   saveProduct: async (product: Product) => {
-    try {
-      await setDoc(doc(db, COLLECTIONS.PRODUCTS, product.id), product);
-      // Update cache
-      const path = COLLECTIONS.PRODUCTS;
-      const currentCache = getCache(path);
-      if (currentCache && Array.isArray(currentCache)) {
-        const existingIndex = currentCache.findIndex((p: Product) => p.id === product.id);
-        if (existingIndex >= 0) {
-          currentCache[existingIndex] = product;
-        } else {
-          currentCache.push(product);
-        }
-        setCache(path, currentCache);
-      } else {
-        setCache(path, [product]);
-      }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `${COLLECTIONS.PRODUCTS}/${product.id}`);
-    }
+    const { error } = await supabase.from(TABLES.PRODUCTS).upsert(product);
+    if (error) throw error;
   },
 
   deleteProduct: async (id: string) => {
-    try {
-      await deleteDoc(doc(db, COLLECTIONS.PRODUCTS, id));
-      // Update cache
-      const path = COLLECTIONS.PRODUCTS;
-      const currentCache = getCache(path);
-      if (currentCache && Array.isArray(currentCache)) {
-        const newData = currentCache.filter((p: Product) => p.id !== id);
-        setCache(path, newData);
-      }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `${COLLECTIONS.PRODUCTS}/${id}`);
-    }
+    const { error } = await supabase.from(TABLES.PRODUCTS).delete().eq('id', id);
+    if (error) throw error;
   },
 
   // Customers
   getCustomers: async (): Promise<Customer[]> => {
-    const path = COLLECTIONS.CUSTOMERS;
-    const cachedData = getCache(path);
-    if (cachedData) {
-      return cachedData;
-    }
-    try {
-      const snapshot = await getDocs(collection(db, path));
-      const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Customer));
-      setCache(path, data);
-      return data;
-    } catch (error: any) {
-      if (error.message.includes("Quota exceeded")) {
-        console.warn(`Quota limit exceeded for ${path}.`);
-        const currentCache = getCache(path);
-        return currentCache || [];
-      }
-      handleFirestoreError(error, OperationType.LIST, path);
-      return [];
-    }
+    const { data, error } = await supabase.from(TABLES.CUSTOMERS).select('*');
+    if (error) throw error;
+    return data as Customer[];
   },
 
   saveCustomer: async (customer: Customer) => {
-    try {
-      await setDoc(doc(db, COLLECTIONS.CUSTOMERS, customer.id), customer);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `${COLLECTIONS.CUSTOMERS}/${customer.id}`);
-    }
+    const { error } = await supabase.from(TABLES.CUSTOMERS).upsert(customer);
+    if (error) throw error;
   },
 
   deleteCustomer: async (id: string) => {
-    try {
-      await deleteDoc(doc(db, COLLECTIONS.CUSTOMERS, id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `${COLLECTIONS.CUSTOMERS}/${id}`);
-    }
+    const { error } = await supabase.from(TABLES.CUSTOMERS).delete().eq('id', id);
+    if (error) throw error;
   },
 
   // Orders
-  getOrders: async (forceRefresh = false): Promise<Order[]> => {
-    const path = COLLECTIONS.ORDERS;
-    if (!forceRefresh) {
-      const cachedData = getCache(path);
-      if (cachedData) {
-        return cachedData;
-      }
-    }
-    try {
-      const snapshot = await getDocs(collection(db, path));
-      const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-      setCache(path, data);
-      return data;
-    } catch (error: any) {
-      if (error.message.includes("Quota exceeded")) {
-        console.warn(`Quota limit exceeded for ${path}.`);
-        const currentCache = getCache(path);
-        return currentCache || [];
-      }
-      handleFirestoreError(error, OperationType.LIST, path);
-      return [];
-    }
+  getOrders: async (): Promise<Order[]> => {
+    const { data, error } = await supabase.from(TABLES.ORDERS).select('*');
+    if (error) throw error;
+    return data as Order[];
   },
 
   getUserOrders: async (email: string): Promise<Order[]> => {
-    const path = `${COLLECTIONS.ORDERS}_${email}`;
-    const cachedData = getCache(path);
-    if (cachedData) {
-      return cachedData;
-    }
-    try {
-      const q = query(collection(db, COLLECTIONS.ORDERS), where("customer_phone", "==", email));
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-      setCache(path, data);
-      return data;
-    } catch (error: any) {
-      if (error.message?.includes("Quota exceeded")) {
-        console.warn(`Quota limit exceeded for ${path}.`);
-        const currentCache = getCache(path);
-        return currentCache || [];
-      }
-      handleFirestoreError(error, OperationType.LIST, COLLECTIONS.ORDERS);
-      return [];
-    }
+    const { data, error } = await supabase
+      .from(TABLES.ORDERS)
+      .select('*')
+      .eq('customer_phone', email);
+    if (error) throw error;
+    return data as Order[];
   },
 
   getOrderByNumber: async (orderNumber: string): Promise<Order | null> => {
-    try {
-      // First try to get it by ID (since new orders use order_number as ID)
-      const docRef = doc(db, COLLECTIONS.ORDERS, orderNumber);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        return { ...docSnap.data(), id: docSnap.id } as Order;
-      }
-      
-      // Fallback for older orders that might have a different ID
-      const q = query(collection(db, COLLECTIONS.ORDERS), where("order_number", "==", orderNumber));
-      const snapshot = await getDocs(q);
-      if (snapshot.empty) return null;
-      const oldDoc = snapshot.docs[0];
-      return { ...oldDoc.data(), id: oldDoc.id } as Order;
-    } catch (error: any) {
-      if (error.message?.includes("Quota exceeded")) {
-        console.warn(`Quota limit exceeded for getOrderByNumber.`);
-        return null;
-      }
-      // If it's a permission error on the fallback query, we just return null
-      // because unauthenticated users can't run queries, only getDoc.
-      if (error.message?.includes("Missing or insufficient permissions")) {
-        return null;
-      }
-      handleFirestoreError(error, OperationType.GET, COLLECTIONS.ORDERS);
-      return null;
-    }
+    const { data, error } = await supabase
+      .from(TABLES.ORDERS)
+      .select('*')
+      .eq('order_number', orderNumber)
+      .single();
+    if (error) return null;
+    return data as Order;
   },
 
   saveOrder: async (order: Order) => {
-    try {
-      await setDoc(doc(db, COLLECTIONS.ORDERS, order.id), order);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `${COLLECTIONS.ORDERS}/${order.id}`);
-    }
+    const { error } = await supabase.from(TABLES.ORDERS).upsert(order);
+    if (error) throw error;
   },
 
   subscribeToOrder: (orderId: string, callback: (order: Order | null) => void) => {
-    const docRef = doc(db, COLLECTIONS.ORDERS, orderId);
-    return onSnapshot(docRef, (doc) => {
-      if (doc.exists()) {
-        callback({ ...doc.data(), id: doc.id } as Order);
-      } else {
-        callback(null);
-      }
-    }, (error) => {
-      console.error("Error subscribing to order:", error);
-      handleFirestoreError(error, OperationType.GET, `${COLLECTIONS.ORDERS}/${orderId}`);
+    supabase.from(TABLES.ORDERS).select('*').eq('id', orderId).single().then(({ data }) => {
+      callback(data as Order);
     });
+
+    const channel = supabase
+      .channel(`order:${orderId}:${Math.random().toString(36).substring(2, 7)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: TABLES.ORDERS, filter: `id=eq.${orderId}` }, (payload) => {
+        callback(payload.new as Order);
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
   },
 
   subscribeToUserOrders: (email: string, callback: (orders: Order[]) => void) => {
-    const q = query(collection(db, COLLECTIONS.ORDERS), where("customer_phone", "==", email));
-    return onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Order));
-      callback(data);
-    }, (error) => {
-      console.error("Error subscribing to user orders:", error);
-      handleFirestoreError(error, OperationType.LIST, COLLECTIONS.ORDERS);
+    supabase.from(TABLES.ORDERS).select('*').eq('customer_phone', email).then(({ data }) => {
+      callback(data as Order[] || []);
     });
+
+    const channel = supabase
+      .channel(`user-orders:${email}:${Math.random().toString(36).substring(2, 7)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: TABLES.ORDERS, filter: `customer_phone=eq.${email}` }, async () => {
+        const { data } = await supabase.from(TABLES.ORDERS).select('*').eq('customer_phone', email);
+        callback(data as Order[] || []);
+      })
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
   },
 
   deleteOrder: async (id: string) => {
-    try {
-      await deleteDoc(doc(db, COLLECTIONS.ORDERS, id));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `${COLLECTIONS.ORDERS}/${id}`);
-    }
+    const { error } = await supabase.from(TABLES.ORDERS).delete().eq('id', id);
+    if (error) throw error;
   },
 
   // Categories
   getCategories: async (): Promise<string[]> => {
-    const path = COLLECTIONS.CATEGORIES;
-    const cachedData = getCache(path);
-    if (cachedData) {
-      return cachedData;
-    }
-    try {
-      const snapshot = await getDocs(collection(db, path));
-      const data = snapshot.docs
-        .map(doc => doc.data().name)
-        .filter(name => typeof name === 'string' && name.length > 0);
-      setCache(path, data);
-      return data;
-    } catch (error: any) {
-      if (error.message.includes("Quota exceeded")) {
-        console.warn(`Quota limit exceeded for ${path}.`);
-        const currentCache = getCache(path);
-        return currentCache || ["amigurumi", "bags", "clothing", "accessories", "home_decor", "custom", "other"];
-      }
-      handleFirestoreError(error, OperationType.LIST, path);
-      return ["amigurumi", "bags", "clothing", "accessories", "home_decor", "custom", "other"];
-    }
+    const { data, error } = await supabase.from(TABLES.CATEGORIES).select('name');
+    if (error) throw error;
+    return data.map(cat => cat.name);
   },
 
   saveCategory: async (category: string) => {
-    try {
-      const cat = category.toLowerCase();
-      await setDoc(doc(db, COLLECTIONS.CATEGORIES, cat), { name: cat });
-      // Update cache
-      const path = COLLECTIONS.CATEGORIES;
-      const currentCache = getCache(path);
-      if (currentCache && Array.isArray(currentCache)) {
-        if (!currentCache.includes(cat)) {
-          currentCache.push(cat);
-          setCache(path, currentCache);
-        }
-      } else {
-        setCache(path, [cat]);
-      }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `${COLLECTIONS.CATEGORIES}/${category}`);
-    }
+    const cat = category.toLowerCase();
+    const { error } = await supabase.from(TABLES.CATEGORIES).upsert({ id: cat, name: cat });
+    if (error) throw error;
   },
 
   deleteCategory: async (category: string) => {
-    try {
-      const cat = category.toLowerCase();
-      await deleteDoc(doc(db, COLLECTIONS.CATEGORIES, cat));
-      // Update cache
-      const path = COLLECTIONS.CATEGORIES;
-      const currentCache = getCache(path);
-      if (currentCache && Array.isArray(currentCache)) {
-        const newData = currentCache.filter((c: string) => c !== cat);
-        setCache(path, newData);
-      }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `${COLLECTIONS.CATEGORIES}/${category}`);
-    }
+    const cat = category.toLowerCase();
+    const { error } = await supabase.from(TABLES.CATEGORIES).delete().eq('id', cat);
+    if (error) throw error;
   },
+
+  // Media
+  saveMediaMetadata: async (media: { name: string, url: string, type: string, size: number }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const mediaDoc = {
+      ...media,
+      id: Math.random().toString(36).substr(2, 9),
+      created_date: new Date().toISOString(),
+      created_by: user?.id || "anonymous"
+    };
+    const { error } = await supabase.from(TABLES.MEDIA).insert(mediaDoc);
+    if (error) throw error;
+    return mediaDoc;
+  },
+
+  getMedia: async () => {
+    const { data, error } = await supabase
+      .from(TABLES.MEDIA)
+      .select('*')
+      .order('created_date', { ascending: false });
+    if (error) throw error;
+    return data;
+  }
 };
