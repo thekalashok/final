@@ -48,8 +48,8 @@ export default function ProductDetails() {
   if (!product) return null;
 
   const images = product.image_urls && product.image_urls.length > 0 
-    ? product.image_urls 
-    : [product.image_url];
+    ? product.image_urls.map(url => url.startsWith('/') ? `${window.location.origin}${url}` : url)
+    : [product.image_url.startsWith('/') ? `${window.location.origin}${product.image_url}` : product.image_url];
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);

@@ -106,22 +106,22 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
       setUploadProgress(0);
       
       try {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `products/${fileName}`;
+        const formData = new FormData();
+        formData.append("file", file);
 
-        const { data, error } = await supabase.storage
-          .from('product-images')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
+        const response = await fetch("/api/upload-telegram", {
+          method: "POST",
+          body: formData,
+        });
 
-        if (error) throw error;
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || "Upload to Telegram failed");
+        }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(filePath);
+        const data = await response.json();
+        // data.url is already returned as a relative path like "/api/file/..." from the server
+        const publicUrl = data.url;
         
         // Save metadata to database
         await dataService.saveMediaMetadata({
@@ -137,10 +137,10 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
           image_url: prev.image_url || publicUrl
         }));
         
-        toast.success("Image uploaded successfully!");
+        toast.success("Image uploaded to Telegram successfully!");
       } catch (error: any) {
         console.error("Upload failed:", error);
-        toast.error(`Upload failed: ${error.message}. Make sure you have created a public bucket named 'product-images' in Supabase.`);
+        toast.error(`Upload failed: ${error.message}. Please check your Telegram BOT_TOKEN and CHAT_ID in the server settings.`);
       } finally {
         setIsUploading(false);
         setUploadProgress(null);

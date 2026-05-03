@@ -191,20 +191,23 @@ export default function ShopHome() {
                     <div className={`relative overflow-hidden bg-white ${aspectClass} group/image`}>
                       <div id={`product-image-container-${product.id}`} className="flex w-full h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                         {product.image_urls && product.image_urls.length > 0 ? (
-                          product.image_urls.map((url, idx) => (
-                            <div key={idx} className="w-full h-full flex-shrink-0 snap-center relative">
-                              <img 
-                                src={url} 
-                                alt={`${product.name} - ${idx + 1}`} 
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                                referrerPolicy="no-referrer"
-                              />
-                            </div>
-                          ))
+                          product.image_urls.map((url, idx) => {
+                            const finalUrl = url.startsWith('/') ? `${window.location.origin}${url}` : url;
+                            return (
+                              <div key={idx} className="w-full h-full flex-shrink-0 snap-center relative">
+                                <img 
+                                  src={finalUrl} 
+                                  alt={`${product.name} - ${idx + 1}`} 
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                  referrerPolicy="no-referrer"
+                                />
+                              </div>
+                            );
+                          })
                         ) : product.image_url ? (
                           <div className="w-full h-full flex-shrink-0 snap-center relative">
                             <img 
-                              src={product.image_url} 
+                              src={product.image_url.startsWith('/') ? `${window.location.origin}${product.image_url}` : product.image_url} 
                               alt={product.name} 
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                               referrerPolicy="no-referrer"
