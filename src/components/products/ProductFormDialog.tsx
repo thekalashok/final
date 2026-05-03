@@ -93,6 +93,51 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
     onSave(newProduct);
   };
 
+  const compressImage = async (file: File): Promise<Blob | File> => {
+    // Only compress if it's an image and larger than 2MB
+    if (!file.type.startsWith('image/') || file.size < 2 * 1024 * 1024) {
+      return file;
+    }
+
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Max dimension 2000px
+          const MAX_SIZE = 2000;
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else resolve(file);
+          }, 'image/jpeg', 0.82); // 82% quality
+        };
+      };
+    });
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -106,17 +151,31 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave,
       setUploadProgress(0);
       
       try {
+        // Compress image if needed
+        const processedFile = await compressImage(file);
+        
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", processedFile, file.name);
 
         const response = await fetch("/api/upload-telegram", {
           method: "POST",
           body: formData,
+        }).catch(err => {
+          if (err.message === "Failed to fetch") {
+            throw new Error("Network Error: The server could not be reached. If you are using Vercel, the image might be too large (max 4.5MB).");
+          }
+          throw err;
         });
 
         if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.error || "Upload to Telegram failed");
+          let errorMsg = "Upload to Telegram failed";
+          try {
+            const errData = await response.json();
+            errorMsg = errData.error || errorMsg;
+          } catch (e) {
+            errorMsg = `Server error (${response.status})`;
+          }
+          throw new Error(errorMsg);
         }
 
         const data = await response.json();

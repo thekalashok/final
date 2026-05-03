@@ -6,12 +6,15 @@ import multer from "multer";
 import admin from "firebase-admin";
 import { Bucket } from "@google-cloud/storage";
 import fs from "fs";
+import cors from "cors";
 
 dotenv.config();
 
 // Initialize server
 const app = express();
-app.use(express.json());
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const PORT = 3000;
 
 const upload = multer({
